@@ -753,6 +753,16 @@ func (p *Parser) ParseDefinitionV3(typeSpecDef *TypeSpecDef) (*SchemaV3, error) 
 		return schema, ErrRecursiveParseStruct
 	}
 
+	if p.UseStructName {
+		schemaName := strings.Split(typeSpecDef.SchemaName, ".")
+		if len(schemaName) > 1 {
+			typeSpecDef.SchemaName = schemaName[len(schemaName)-1]
+			typeName = typeSpecDef.SchemaName
+		} else {
+			p.debug.Printf("Could not strip type name of %s", typeName)
+		}
+	}
+
 	p.structStack = append(p.structStack, typeSpecDef)
 
 	p.debug.Printf("Generating %s", typeName)

@@ -44,6 +44,7 @@ const (
 	packagePrefixFlag        = "packagePrefix"
 	stateFlag                = "state"
 	parseFuncBodyFlag        = "parseFuncBody"
+	useStructNameFlag        = "useStructName"
 )
 
 var initFlags = []cli.Flag{
@@ -192,6 +193,11 @@ var initFlags = []cli.Flag{
 		// Value: false,
 		Usage: "Parse API info within body of functions in go files, disabled by default (default: false)",
 	},
+	&cli.BoolFlag{
+		Name:    useStructNameFlag,
+		Aliases: []string{"st"},
+		Usage:   "Dont use those ugly full-path names when using dependency flag",
+	},
 }
 
 func initAction(ctx *cli.Context) error {
@@ -275,6 +281,7 @@ func initAction(ctx *cli.Context) error {
 		PackagePrefix:       ctx.String(packagePrefixFlag),
 		State:               ctx.String(stateFlag),
 		ParseFuncBody:       ctx.Bool(parseFuncBodyFlag),
+		UseStructNames:      ctx.Bool(useStructNameFlag),
 	})
 }
 

@@ -201,6 +201,9 @@ type Parser struct {
 
 	// use new openAPI version
 	openAPIVersion bool
+
+	// UseStructName Dont use those ugly full-path names when using dependency flag
+	UseStructName bool
 }
 
 // FieldParserFactory create FieldParser.
@@ -382,6 +385,13 @@ func SetOverrides(overrides map[string]string) func(parser *Parser) {
 		for k, v := range overrides {
 			p.Overrides[k] = v
 		}
+	}
+}
+
+// SetUseStructName sets whether to strip the full-path definition name.
+func SetUseStructName(useStructName bool) func(*Parser) {
+	return func(p *Parser) {
+		p.UseStructName = useStructName
 	}
 }
 

@@ -158,6 +158,9 @@ type Config struct {
 
 	// ParseFuncBody whether swag should parse api info inside of funcs
 	ParseFuncBody bool
+
+	// UseStructNames stick to the struct name instead of those ugly full-path names
+	UseStructNames bool
 }
 
 // Build builds swagger json file  for given searchDir and mainAPIFile. Returns json.
@@ -219,6 +222,7 @@ func (g *Gen) Build(config *Config) error {
 		swag.GenerateOpenAPI3Doc(config.GenerateOpenAPI3Doc),
 		swag.SetCollectionFormat(config.CollectionFormat),
 		swag.SetPackagePrefix(config.PackagePrefix),
+		swag.SetUseStructName(config.UseStructNames),
 	)
 
 	p.PropNamingStrategy = config.PropNamingStrategy
