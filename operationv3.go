@@ -468,7 +468,7 @@ func (o *OperationV3) ParseParamComment(commentLine string, astFile *ast.File) e
 	return nil
 }
 
-func (o *OperationV3) fillRequestBody(name string, schema *spec.RefOrSpec[spec.Schema], required bool, description string, primitive, formData bool) {
+func (o *OperationV3) fillRequestBody(_ string, schema *spec.RefOrSpec[spec.Schema], required bool, description string, primitive, formData bool) {
 	if o.RequestBody == nil {
 		o.RequestBody = spec.NewRequestBodySpec()
 		o.RequestBody.Spec.Spec.Content = make(map[string]*spec.Extendable[spec.MediaType])
@@ -482,45 +482,11 @@ func (o *OperationV3) fillRequestBody(name string, schema *spec.RefOrSpec[spec.S
 		}
 	}
 
+	o.RequestBody.Spec.Spec.Description = description
 	o.RequestBody.Spec.Spec.Required = required
 
-	// Append description to existing description if this is not the first body
-	if o.RequestBody.Spec.Spec.Description != "" && description != "" {
-		o.RequestBody.Spec.Spec.Description += " | " + description
-	} else if description != "" {
-		o.RequestBody.Spec.Spec.Description = description
-	}
-
-	// Handle oneOf merging for request body schemas
-	contentType := "application/json"
-	if primitive && !formData {
-		contentType = "text/plain"
-	} else if formData {
-		contentType = "application/x-www-form-urlencoded"
-	}
-
-	mediaType := o.RequestBody.Spec.Spec.Content[contentType]
-	if mediaType == nil {
-		mediaType = spec.NewMediaType()
-		o.RequestBody.Spec.Spec.Content[contentType] = mediaType
-	}
-	if schema.Ref != nil {
-		schema.Ref.Summary = name
-		schema.Ref.Description = description
-	}
-	if schema.Spec != nil {
-		schema.Spec.Title = name
-	}
-	if mediaType.Spec.Schema == nil {
-		mediaType.Spec.Schema = schema
-	} else if mediaType.Spec.Schema.Ref != nil || mediaType.Spec.Schema.Spec.OneOf == nil {
-		// If there's an existing schema that doesn't have oneOf, create a oneOf schema
-		oneOfSchema := spec.NewSchemaSpec()
-		oneOfSchema.Spec.OneOf = []*spec.RefOrSpec[spec.Schema]{mediaType.Spec.Schema, schema}
-		mediaType.Spec.Schema = oneOfSchema
-	} else {
-		// If there's already a oneOf schema, append to it
-		mediaType.Spec.Schema.Spec.OneOf = append(mediaType.Spec.Schema.Spec.OneOf, schema)
+	for _, value := range o.RequestBody.Spec.Spec.Content {
+		value.Spec.Schema = schema
 	}
 }
 
