@@ -314,7 +314,7 @@ func (g *Gen) writeDoc(config *Config, doc interface{}) error {
 }
 
 func (g *Gen) writeJSON(config *Config, spec interface{}) error {
-	var filename = "swagger.json"
+	var filename = "openapi.json"
 
 	if config.State != "" {
 		filename = config.State + "_" + filename
