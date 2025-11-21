@@ -6,6 +6,7 @@ import (
 	"go/ast"
 	"log"
 	"net/http"
+	"sort"
 	"strconv"
 	"strings"
 
@@ -419,6 +420,21 @@ func (o *OperationV3) ParseParamComment(commentLine string, astFile *ast.File) e
 
 				o.Operation.Parameters = append(o.Operation.Parameters, listItem)
 			}
+
+			// Sort parameters by Name
+			sort.Slice(o.Operation.Parameters, func(i, j int) bool {
+				nameI := ""
+				if o.Operation.Parameters[i].Spec != nil && o.Operation.Parameters[i].Spec.Spec != nil {
+					nameI = o.Operation.Parameters[i].Spec.Spec.Name
+				}
+
+				nameJ := ""
+				if o.Operation.Parameters[j].Spec != nil && o.Operation.Parameters[j].Spec.Spec != nil {
+					nameJ = o.Operation.Parameters[j].Spec.Spec.Name
+				}
+
+				return nameI < nameJ
+			})
 
 			return nil
 		}
