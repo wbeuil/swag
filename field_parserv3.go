@@ -26,6 +26,7 @@ type structFieldV3 struct {
 	enumVarNames []interface{}
 	unique       bool
 	pattern      string
+	defaultValue interface{}
 }
 
 func (sf *structFieldV3) setOneOf(valValue string) {
@@ -180,6 +181,14 @@ func (ps *tagBaseFieldParserV3) complementSchema(schema *spec.Schema, types []st
 	validateTagValue := ps.tag.Get(validateTag)
 	if validateTagValue != "" {
 		field.parseValidTags(validateTagValue)
+	}
+
+	modTagValue := ps.tag.Get(modTag)
+	if modTagValue != "" {
+		err := field.parseModTags(modTagValue)
+		if err != nil {
+			return err
+		}
 	}
 
 	enumsTagValue := ps.tag.Get(enumsTag)
@@ -380,6 +389,7 @@ func (ps *tagBaseFieldParserV3) complementSchema(schema *spec.Schema, types []st
 	elemSchema.Enum = append(elemSchema.Enum, field.enums...)
 	elemSchema.Pattern = field.pattern
 	elemSchema.OneOf = oneOfSchemas
+	elemSchema.Default = field.defaultValue
 
 	return nil
 }
@@ -438,6 +448,40 @@ func (sf *structFieldV3) parseValidTags(validTag string) {
 			continue
 		}
 	}
+}
+
+func (sf *structFieldV3) parseModTags(modTag string) error {
+	// `validate:"default=1"`
+	for _, val := range strings.Split(modTag, ",") {
+		var (
+			valValue string
+			keyVal   = strings.Split(val, "=")
+		)
+
+		switch len(keyVal) {
+		case 1:
+		case 2:
+			valValue = strings.ReplaceAll(strings.ReplaceAll(keyVal[1], utf8HexComma, ","), utf8Pipe, "|")
+		default:
+			continue
+		}
+
+		switch keyVal[0] {
+		case "default":
+			value, err := defineType(sf.schemaType, valValue)
+			if err != nil {
+				return err
+			}
+			sf.defaultValue = value
+		case "dive":
+			// ignore dive
+			return nil
+		default:
+			continue
+		}
+	}
+
+	return nil
 }
 
 func (sf *structFieldV3) parseEnumTags(enumTag string) error {
