@@ -478,7 +478,7 @@ func (ps *tagBaseFieldParserV3) ShouldSkip() bool {
 	// json:"tag,hoge"
 	name := ps.JsonName()
 	if name == "" {
-		return true
+		return ps.FormName() == ""
 	}
 
 	return false

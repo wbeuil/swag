@@ -336,7 +336,7 @@ func (g *Gen) writeJSON(config *Config, spec interface{}) error {
 		return err
 	}
 
-	g.debug.Printf("create swagger.json at %+v", jsonFileName)
+	g.debug.Printf("create openapi.json at %+v", jsonFileName)
 
 	return nil
 }

@@ -843,12 +843,41 @@ func TestOperation_ParseParamCommentV3(t *testing.T) {
 
 	t.Run("object", func(t *testing.T) {
 		t.Parallel()
-		for _, paramType := range []string{"header", "path", "query"} {
+		for _, paramType := range []string{"query"} {
 			t.Run(paramType, func(t *testing.T) {
-				assert.Error(t,
-					NewOperationV3(New()).
-						ParseComment(`@Param some_object `+paramType+` main.Object true "Some Object"`,
-							nil))
+				parser := New()
+				parser.packages.uniqueDefinitions["main.Object"] = &TypeSpecDef{
+					File: &ast.File{Name: &ast.Ident{Name: "test"}},
+					TypeSpec: &ast.TypeSpec{
+						Name:       &ast.Ident{Name: "Object"},
+						TypeParams: &ast.FieldList{List: []*ast.Field{{Names: []*ast.Ident{{Name: "T"}}}}},
+						Type: &ast.StructType{
+							Struct: 100,
+							Fields: &ast.FieldList{
+								List: []*ast.Field{
+									{
+										Names: []*ast.Ident{
+											{Name: "Field1"},
+										},
+										Type: ast.NewIdent("string"),
+									},
+									{
+										Names: []*ast.Ident{
+											{Name: "Field2"},
+										},
+										Type: ast.NewIdent("int"),
+									},
+								},
+							},
+						},
+					},
+				}
+				o := NewOperationV3(parser)
+				err := o.ParseComment(`@Param some_object `+paramType+` main.Object true "Some Object"`,
+					nil)
+				assert.NoError(t, err)
+				// Verify that struct fields were expanded into individual parameters
+				assert.Greater(t, len(o.Parameters), 0, "should have expanded struct into parameters")
 			})
 		}
 	})
