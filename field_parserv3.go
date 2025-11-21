@@ -27,6 +27,7 @@ type structFieldV3 struct {
 	unique       bool
 	pattern      string
 	defaultValue interface{}
+	diveMode     bool // tracks if we're processing tags after "dive" for arrays
 }
 
 func (sf *structFieldV3) setOneOf(valValue string) {
@@ -367,6 +368,9 @@ func (ps *tagBaseFieldParserV3) complementSchema(schema *spec.Schema, types []st
 
 	elemSchema := schema
 
+	// Always apply defaultValue to the element schema
+	elemSchema.Default = field.defaultValue
+
 	if field.schemaType == ARRAY {
 		// For Array only
 		schema.MaxItems = field.maxItems
@@ -389,7 +393,6 @@ func (ps *tagBaseFieldParserV3) complementSchema(schema *spec.Schema, types []st
 	elemSchema.Enum = append(elemSchema.Enum, field.enums...)
 	elemSchema.Pattern = field.pattern
 	elemSchema.OneOf = oneOfSchemas
-	elemSchema.Default = field.defaultValue
 
 	return nil
 }
@@ -442,7 +445,14 @@ func (sf *structFieldV3) parseValidTags(validTag string) {
 				sf.unique = true
 			}
 		case "dive":
-			// ignore dive
+			if sf.schemaType == ARRAY {
+				// Set dive mode so subsequent tags apply to array items
+				sf.diveMode = true
+				// Continue processing remaining tags - they apply to array items
+				continue
+			}
+
+			// ignore dive for object
 			return
 		default:
 			continue
@@ -468,13 +478,31 @@ func (sf *structFieldV3) parseModTags(modTag string) error {
 
 		switch keyVal[0] {
 		case "default":
-			value, err := defineType(sf.schemaType, valValue)
+			defaultType := sf.schemaType
+			// In dive mode, default applies to array level as an array containing the default item
+			if sf.diveMode && sf.schemaType == ARRAY {
+				defaultType = sf.arrayType
+			}
+
+			value, err := defineType(defaultType, valValue)
 			if err != nil {
 				return err
 			}
-			sf.defaultValue = value
+
+			if sf.diveMode && sf.schemaType == ARRAY {
+				sf.defaultValue = []interface{}{value}
+			} else {
+				sf.defaultValue = value
+			}
 		case "dive":
-			// ignore dive
+			if sf.schemaType == ARRAY {
+				// Set dive mode so subsequent tags apply to array items
+				sf.diveMode = true
+				// Continue processing remaining tags - they apply to array items
+				continue
+			}
+
+			// ignore dive for object
 			return nil
 		default:
 			continue
