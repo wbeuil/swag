@@ -870,6 +870,105 @@ func TestParseResponseCommentWithBasicTypeAndCodes(t *testing.T) {
 	assert.Equal(t, expected, string(b))
 }
 
+func TestParseResponseCommentWithContentType(t *testing.T) {
+	t.Parallel()
+
+	t.Run("Success with content type adds to Produces", func(t *testing.T) {
+		t.Parallel()
+
+		comment := `@Success 200 {object} model.Success "ok" application/json`
+		parser := New()
+		parser.addTestType("model.Success")
+		operation := NewOperation(parser)
+		err := operation.ParseComment(comment, nil)
+		require.NoError(t, err)
+
+		// Content type should be added to Produces array
+		assert.Contains(t, operation.Produces, "application/json")
+		response := operation.Responses.StatusCodeResponses[200]
+		assert.NotNil(t, response)
+		assert.Equal(t, "ok", response.Description)
+	})
+
+	t.Run("Failure with problem+json content type", func(t *testing.T) {
+		t.Parallel()
+
+		comment := `@Failure 409 {object} model.Problem "Conflict" application/problem+json`
+		parser := New()
+		parser.addTestType("model.Problem")
+		operation := NewOperation(parser)
+		err := operation.ParseComment(comment, nil)
+		require.NoError(t, err)
+
+		// Content type should be added to Produces array
+		assert.Contains(t, operation.Produces, "application/problem+json")
+		response := operation.Responses.StatusCodeResponses[409]
+		assert.NotNil(t, response)
+		assert.Equal(t, "Conflict", response.Description)
+	})
+
+	t.Run("Content type alias support", func(t *testing.T) {
+		t.Parallel()
+
+		comment := `@Success 200 {object} model.Success "ok" json`
+		parser := New()
+		parser.addTestType("model.Success")
+		operation := NewOperation(parser)
+		err := operation.ParseComment(comment, nil)
+		require.NoError(t, err)
+
+		// "json" alias should be converted to "application/json"
+		assert.Contains(t, operation.Produces, "application/json")
+	})
+
+	t.Run("Invalid content type", func(t *testing.T) {
+		t.Parallel()
+
+		comment := `@Success 200 {object} model.Success "ok" invalid-type`
+		parser := New()
+		parser.addTestType("model.Success")
+		operation := NewOperation(parser)
+		err := operation.ParseComment(comment, nil)
+		assert.Error(t, err)
+		assert.Contains(t, err.Error(), "can not parse response content type")
+	})
+
+	t.Run("Backward compatibility - no content type", func(t *testing.T) {
+		t.Parallel()
+
+		comment := `@Success 200 {object} model.Success "ok"`
+		parser := New()
+		parser.addTestType("model.Success")
+		operation := NewOperation(parser)
+		err := operation.ParseComment(comment, nil)
+		require.NoError(t, err)
+
+		response := operation.Responses.StatusCodeResponses[200]
+		assert.NotNil(t, response)
+		assert.Equal(t, "ok", response.Description)
+	})
+
+	t.Run("Multiple status codes with content type", func(t *testing.T) {
+		t.Parallel()
+
+		comment := `@Failure 400,404 {object} model.Error "Error" application/problem+json`
+		parser := New()
+		parser.addTestType("model.Error")
+		operation := NewOperation(parser)
+		err := operation.ParseComment(comment, nil)
+		require.NoError(t, err)
+
+		// Content type should be added to Produces
+		assert.Contains(t, operation.Produces, "application/problem+json")
+
+		response400 := operation.Responses.StatusCodeResponses[400]
+		assert.NotNil(t, response400)
+
+		response404 := operation.Responses.StatusCodeResponses[404]
+		assert.NotNil(t, response404)
+	})
+}
+
 func TestParseEmptyResponseComment(t *testing.T) {
 	t.Parallel()
 

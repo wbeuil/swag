@@ -723,6 +723,26 @@ func parseMimeTypeList(mimeTypeList string, typeList *[]string, format string) e
 	return nil
 }
 
+// parseSingleMimeType validates and normalizes a single MIME type string.
+// It supports both full MIME types (e.g., "application/json") and aliases (e.g., "json").
+func parseSingleMimeType(mimeType string) (string, error) {
+	mimeType = strings.TrimSpace(mimeType)
+	if mimeType == "" {
+		return "", fmt.Errorf("empty mime type")
+	}
+
+	if mimeTypePattern.MatchString(mimeType) {
+		return mimeType, nil
+	}
+
+	aliasMimeType, ok := mimeTypeAliases[mimeType]
+	if !ok {
+		return "", fmt.Errorf("%v MIME type can't be accepted", mimeType)
+	}
+
+	return aliasMimeType, nil
+}
+
 var routerPattern = regexp.MustCompile(`^(/[\w./\-{}\(\)+:$]*)[[:blank:]]+\[(\w+)]`)
 
 // ParseRouterComment parses comment for given `router` comment string.
@@ -843,7 +863,7 @@ func findTypeDef(importPath, typeName string) (*ast.TypeSpec, error) {
 	return nil, fmt.Errorf("type spec not found")
 }
 
-var responsePattern = regexp.MustCompile(`^([\w,]+)\s+([\w{}]+)\s+([\w\-.\\{}=,\[\s\]]+)\s*(".*)?`)
+var responsePattern = regexp.MustCompile(`^([\w,]+)\s+([\w{}]+)\s+([\w\-.\\{}=,\[\s\]]+)\s*(".*?)?\s*([\w/+-]+)?$`)
 
 // ResponseType{data1=Type1,data2=Type2}.
 var combinedPattern = regexp.MustCompile(`^([\w\-./\[\]]+){(.*)}$`)
@@ -1005,7 +1025,7 @@ func (operation *Operation) parseAPIObjectSchema(commentLine, schemaType, refTyp
 // ParseResponseComment parses comment for given `response` comment string.
 func (operation *Operation) ParseResponseComment(commentLine string, astFile *ast.File) error {
 	matches := responsePattern.FindStringSubmatch(commentLine)
-	if len(matches) != 5 {
+	if len(matches) < 5 {
 		err := operation.ParseEmptyResponseComment(commentLine)
 		if err != nil {
 			return operation.ParseEmptyResponseOnly(commentLine)
@@ -1015,6 +1035,27 @@ func (operation *Operation) ParseResponseComment(commentLine string, astFile *as
 	}
 
 	description := strings.Trim(matches[4], "\"")
+
+	// Check if optional content type is provided (matches[5])
+	// For v2, we add it to the Produces array if not already present
+	if len(matches) > 5 && matches[5] != "" {
+		contentType, err := parseSingleMimeType(matches[5])
+		if err != nil {
+			return fmt.Errorf("can not parse response content type \"%s\": %w", matches[5], err)
+		}
+
+		// Add to Produces array if not already present
+		found := false
+		for _, existingType := range operation.Produces {
+			if existingType == contentType {
+				found = true
+				break
+			}
+		}
+		if !found {
+			operation.Produces = append(operation.Produces, contentType)
+		}
+	}
 
 	schema, err := operation.parseAPIObjectSchema(commentLine, strings.Trim(matches[2], "{}"), strings.TrimSpace(matches[3]), astFile)
 	if err != nil {

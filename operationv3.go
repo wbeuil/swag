@@ -939,7 +939,7 @@ func newHeaderSpecV3(schemaType, description string) *spec.RefOrSpec[spec.Extend
 // ParseResponseComment parses comment for given `response` comment string.
 func (o *OperationV3) ParseResponseComment(commentLine string, astFile *ast.File) error {
 	matches := responsePattern.FindStringSubmatch(commentLine)
-	if len(matches) != 5 {
+	if len(matches) < 5 {
 		err := o.ParseEmptyResponseComment(commentLine)
 		if err != nil {
 			return o.ParseEmptyResponseOnly(commentLine)
@@ -949,6 +949,16 @@ func (o *OperationV3) ParseResponseComment(commentLine string, astFile *ast.File
 	}
 
 	description := strings.Trim(matches[4], "\"")
+
+	// Check if optional content type is provided (matches[5])
+	var responseContentType string
+	if len(matches) > 5 && matches[5] != "" {
+		contentType, err := parseSingleMimeType(matches[5])
+		if err != nil {
+			return fmt.Errorf("can not parse response content type \"%s\": %w", matches[5], err)
+		}
+		responseContentType = contentType
+	}
 
 	schema, err := o.parseAPIObjectSchema(commentLine, strings.Trim(matches[2], "{}"), strings.TrimSpace(matches[3]), astFile)
 	if err != nil {
@@ -971,8 +981,11 @@ func (o *OperationV3) ParseResponseComment(commentLine string, astFile *ast.File
 		response := spec.NewResponseSpec()
 		response.Spec.Spec.Description = description
 
-		// Add the schema to all specified response MIME types
-		if len(o.responseMimeTypes) > 0 {
+		// Use per-response content type if specified, otherwise fall back to @Produce or default
+		if responseContentType != "" {
+			setResponseSchema(response.Spec.Spec, responseContentType, schema)
+		} else if len(o.responseMimeTypes) > 0 {
+			// Add the schema to all specified response MIME types from @Produce
 			for _, mimeType := range o.responseMimeTypes {
 				setResponseSchema(response.Spec.Spec, mimeType, schema)
 			}

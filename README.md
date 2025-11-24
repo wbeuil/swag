@@ -470,8 +470,8 @@ The following annotations are only available if you set the -v3.1 flag in the CL
 | produce              | A list of MIME types the APIs can produce. Value MUST be as described under [Mime Types](#mime-types).                                                                                            |
 | param                | Parameters that separated by spaces. `param name`,`param type`,`data type`,`is mandatory?`,`comment` `attribute(optional)`                                                                        |
 | security             | [Security](#security) to each API operation.                                                                                                                                                      |
-| success              | Success response that separated by spaces. `return code or default`,`{param type}`,`data type`,`comment`                                                                                          |
-| failure              | Failure response that separated by spaces. `return code or default`,`{param type}`,`data type`,`comment`                                                                                          |
+| success              | Success response that separated by spaces. `return code or default`,`{param type}`,`data type`,`comment` `content type (optional)`                                                                                          |
+| failure              | Failure response that separated by spaces. `return code or default`,`{param type}`,`data type`,`comment` `content type (optional)`                                                                                          |
 | response             | As same as `success` and `failure`                                                                                                                                                                |
 | header               | Header in response that separated by spaces. `return code`,`{param type}`,`data type`,`comment`                                                                                                   |
 | router               | Path definition that separated by spaces. `path`,`[httpMethod]`                                                                                                                                   |
@@ -698,6 +698,20 @@ type DeepObject struct { //in `proto` package
 // @Header       200,400,default  {string}  Token     "token"
 // @Header       all              {string}  Token2    "token2"
 ```
+
+### Specify different content types per status code
+
+You can specify different content types for specific status codes by adding an optional content type parameter at the end of `@Success` or `@Failure` annotations. This is particularly useful for error responses that use different content types like `application/problem+json` for RFC 7807 Problem Details.
+
+```go
+// @Success 200 {object} model.Success "Success response" application/json
+// @Failure 409 {object} model.Problem "Conflict" application/problem+json
+// @Failure 400,404 {object} model.Error "Error" application/problem+json
+```
+
+The content type parameter is optional. If omitted, the behavior falls back to the existing `@Produce` annotation or defaults to `application/json`. When specified, the per-response content type takes precedence over `@Produce` for that specific status code.
+
+Content type aliases (like `json`, `xml`, etc.) are supported and will be converted to their full MIME type equivalents.
 
 ### Use multiple path params
 
