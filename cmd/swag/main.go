@@ -45,6 +45,8 @@ const (
 	stateFlag                = "state"
 	parseFuncBodyFlag        = "parseFuncBody"
 	useStructNameFlag        = "useStructName"
+	generateAsyncAPIDocFlag  = "generateAsyncAPI"
+	asyncOutputTypesFlag     = "asyncOutputTypes"
 )
 
 var initFlags = []cli.Flag{
@@ -198,6 +200,15 @@ var initFlags = []cli.Flag{
 		Aliases: []string{"st"},
 		Usage:   "Dont use those ugly full-path names when using dependency flag",
 	},
+	&cli.BoolFlag{
+		Name:  generateAsyncAPIDocFlag,
+		Usage: "Generate AsyncAPI 3.1 spec alongside OpenAPI",
+	},
+	&cli.StringFlag{
+		Name:  asyncOutputTypesFlag,
+		Value: "json,yaml",
+		Usage: "Output types of generated AsyncAPI files (asyncapi.json, asyncapi.yaml) like json,yaml",
+	},
 }
 
 func initAction(ctx *cli.Context) error {
@@ -282,6 +293,8 @@ func initAction(ctx *cli.Context) error {
 		State:               ctx.String(stateFlag),
 		ParseFuncBody:       ctx.Bool(parseFuncBodyFlag),
 		UseStructNames:      ctx.Bool(useStructNameFlag),
+		GenerateAsyncAPIDoc: ctx.Bool(generateAsyncAPIDocFlag),
+		AsyncOutputTypes:    strings.Split(ctx.String(asyncOutputTypesFlag), ","),
 	})
 }
 
