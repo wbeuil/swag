@@ -72,7 +72,7 @@ func (p *Parser) parseGeneralAPIInfoV3(comments []string) error {
 				return err
 			}
 
-			setspecInfo(p.openAPI, attr, string(commentInfo))
+			setspecInfo(p.openAPI, descriptionAttr, string(commentInfo))
 		case "@host":
 			if len(p.openAPI.Servers) == 0 {
 				server := spec.NewServer()
@@ -549,6 +549,11 @@ func (p *Parser) ParseRouterAPIInfoV3(fileInfo *AstFileInfo) error {
 			// workaround until we replace the produce comment with a new @Success syntax
 			// We first need to setup all responses before we can set the mimetypes
 			err := operation.ProcessProduceComment()
+			if err != nil {
+				return err
+			}
+
+			err = operation.ProcessDiscriminatorComment()
 			if err != nil {
 				return err
 			}
@@ -1058,7 +1063,7 @@ func (p *Parser) parseStructFieldV3(file *ast.File, field *ast.Field) (map[strin
 		tagRequired = append(tagRequired, fieldName)
 	}
 
-	if formName := ps.FormName(); len(formName) > 0 {
+	if formName := ps.FormName(); len(formName) > 0 && schema != nil && schema.Spec != nil {
 		if schema.Spec.Extensions == nil {
 			schema.Spec.Extensions = make(map[string]any)
 		}

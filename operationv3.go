@@ -14,6 +14,11 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
+type parsedDiscriminator struct {
+	propertyName string
+	mapping      map[string]string // nil when not specified
+}
+
 // OperationV3 describes a single API operation on a path.
 // For more information: https://github.com/swaggo/swag#api-operation
 type OperationV3 struct {
@@ -22,6 +27,7 @@ type OperationV3 struct {
 	spec.Operation
 	RouterProperties  []RouteProperties
 	responseMimeTypes []string
+	discriminatorInfo *parsedDiscriminator
 }
 
 // NewOperationV3 returns a new instance of OperationV3.
@@ -100,6 +106,8 @@ func (o *OperationV3) ParseComment(comment string, astFile *ast.File) error {
 		return o.ParseServerURLComment(lineRemainder)
 	case "@servers.description":
 		return o.ParseServerDescriptionComment(lineRemainder)
+	case discriminatorAttr:
+		return o.ParseDiscriminatorComment(lineRemainder)
 	default:
 		return o.ParseMetadata(attribute, lowerAttribute, lineRemainder)
 	}
@@ -359,7 +367,7 @@ func (o *OperationV3) ParseParamComment(commentLine string, astFile *ast.File) e
 	param := createParameterV3(paramType, description, name, objectType, refType, required, enums, o.parser.collectionFormatInQuery)
 
 	switch paramType {
-	case "path", "header":
+	case "path":
 		switch objectType {
 		case ARRAY:
 			if !IsPrimitiveType(refType) {
@@ -368,7 +376,7 @@ func (o *OperationV3) ParseParamComment(commentLine string, astFile *ast.File) e
 		case OBJECT:
 			return fmt.Errorf("%s is not supported type for %s", refType, paramType)
 		}
-	case "query":
+	case "query", "header":
 		switch objectType {
 		case ARRAY:
 			if !IsPrimitiveType(refType) && !(refType == "file" && paramType == "formData") {
@@ -484,7 +492,7 @@ func (o *OperationV3) ParseParamComment(commentLine string, astFile *ast.File) e
 	return nil
 }
 
-func (o *OperationV3) fillRequestBody(_ string, schema *spec.RefOrSpec[spec.Schema], required bool, description string, primitive, formData bool) {
+func (o *OperationV3) fillRequestBody(name string, schema *spec.RefOrSpec[spec.Schema], required bool, description string, primitive, formData bool) {
 	if o.RequestBody == nil {
 		o.RequestBody = spec.NewRequestBodySpec()
 		o.RequestBody.Spec.Spec.Content = make(map[string]*spec.Extendable[spec.MediaType])
@@ -498,9 +506,25 @@ func (o *OperationV3) fillRequestBody(_ string, schema *spec.RefOrSpec[spec.Sche
 		}
 	}
 
-	o.RequestBody.Spec.Spec.Description = description
 	o.RequestBody.Spec.Spec.Required = required
 
+	// Append description to existing description if this is not the first body
+	if o.RequestBody.Spec.Spec.Description != "" && description != "" {
+		o.RequestBody.Spec.Spec.Description += " | " + description
+	} else if description != "" {
+		o.RequestBody.Spec.Spec.Description = description
+	}
+
+	// Set name metadata on schema
+	if schema.Ref != nil {
+		schema.Ref.Summary = name
+		schema.Ref.Description = description
+	}
+	if schema.Spec != nil {
+		schema.Spec.Title = name
+	}
+
+	// Assign schema to all content types (no oneOf)
 	for _, value := range o.RequestBody.Spec.Spec.Content {
 		value.Spec.Schema = schema
 	}
@@ -877,7 +901,7 @@ func parseObjectSchemaV3(parser *Parser, refType string, astFile *ast.File) (*sp
 // ParseResponseHeaderComment parses comment for given `response header` comment string.
 func (o *OperationV3) ParseResponseHeaderComment(commentLine string, _ *ast.File) error {
 	matches := responsePattern.FindStringSubmatch(commentLine)
-	if len(matches) != 5 {
+	if len(matches) < 5 {
 		return fmt.Errorf("can not parse response comment \"%s\"", commentLine)
 	}
 
@@ -1265,4 +1289,88 @@ func (o *OperationV3) ParseCodeSample(attribute, _, lineRemainder string) error 
 
 	// Fallback into existing logic
 	return o.ParseMetadata(attribute, strings.ToLower(attribute), lineRemainder)
+}
+
+// ParseDiscriminatorComment parses the @Discriminator annotation.
+// Syntax: @Discriminator propertyName [key=ref,key=ref,...]
+func (o *OperationV3) ParseDiscriminatorComment(commentLine string) error {
+	if commentLine == "" {
+		return fmt.Errorf("@discriminator requires at least a propertyName")
+	}
+	parts := FieldsByAnySpace(commentLine, 2)
+	propertyName := parts[0]
+	var mapping map[string]string
+	if len(parts) == 2 {
+		parsed, err := parseDiscriminatorMapping(parts[1])
+		if err != nil {
+			return fmt.Errorf("@discriminator mapping: %w", err)
+		}
+		mapping = parsed
+	}
+	if o.discriminatorInfo != nil {
+		return fmt.Errorf("@discriminator already defined for this operation")
+	}
+	o.discriminatorInfo = &parsedDiscriminator{propertyName: propertyName, mapping: mapping}
+	return nil
+}
+
+func parseDiscriminatorMapping(raw string) (map[string]string, error) {
+	result := make(map[string]string)
+	for _, entry := range strings.Split(raw, ",") {
+		entry = strings.TrimSpace(entry)
+		if entry == "" {
+			continue
+		}
+		kv := strings.SplitN(entry, "=", 2)
+		if len(kv) != 2 {
+			return nil, fmt.Errorf("invalid mapping entry %q: expected key=ref", entry)
+		}
+		key, ref := strings.TrimSpace(kv[0]), strings.TrimSpace(kv[1])
+		if key == "" || ref == "" {
+			return nil, fmt.Errorf("invalid mapping entry %q: key and ref must not be empty", entry)
+		}
+		result[key] = ref
+	}
+	return result, nil
+}
+
+// ProcessDiscriminatorComment applies the parsed discriminator to any oneOf schemas in the operation's responses and request body.
+func (o *OperationV3) ProcessDiscriminatorComment() error {
+	if o.discriminatorInfo == nil {
+		return nil
+	}
+	d := buildDiscriminator(o.discriminatorInfo)
+	if o.Responses != nil {
+		for _, response := range o.Responses.Spec.Response {
+			applyDiscriminatorToContent(response.Spec.Spec.Content, d)
+		}
+		if o.Responses.Spec.Default != nil {
+			applyDiscriminatorToContent(o.Responses.Spec.Default.Spec.Spec.Content, d)
+		}
+	}
+	if o.RequestBody != nil {
+		applyDiscriminatorToContent(o.RequestBody.Spec.Spec.Content, d)
+	}
+	return nil
+}
+
+func buildDiscriminator(info *parsedDiscriminator) *spec.Discriminator {
+	d := spec.NewDiscriminator()
+	d.PropertyName = info.propertyName
+	if len(info.mapping) > 0 {
+		d.Mapping = info.mapping
+	}
+	return d
+}
+
+func applyDiscriminatorToContent(content map[string]*spec.Extendable[spec.MediaType], d *spec.Discriminator) {
+	for _, mediaType := range content {
+		if mediaType == nil || mediaType.Spec.Schema == nil {
+			continue
+		}
+		s := mediaType.Spec.Schema
+		if s.Spec != nil && len(s.Spec.OneOf) > 0 {
+			s.Spec.Discriminator = d
+		}
+	}
 }

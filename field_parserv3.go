@@ -57,7 +57,12 @@ func (sf *structFieldV3) setMin(valValue string) {
 		return
 	}
 
-	switch sf.schemaType {
+	schemaType := sf.schemaType
+	if sf.diveMode && sf.schemaType == ARRAY {
+		schemaType = sf.arrayType
+	}
+
+	switch schemaType {
 	case INTEGER, NUMBER:
 		sf.minimum = &value
 	case STRING:
@@ -73,7 +78,12 @@ func (sf *structFieldV3) setMax(valValue string) {
 		return
 	}
 
-	switch sf.schemaType {
+	schemaType := sf.schemaType
+	if sf.diveMode && sf.schemaType == ARRAY {
+		schemaType = sf.arrayType
+	}
+
+	switch schemaType {
 	case INTEGER, NUMBER:
 		sf.maximum = &value
 	case STRING:
@@ -119,38 +129,32 @@ func (ps *tagBaseFieldParserV3) CustomSchema() (*spec.RefOrSpec[spec.Schema], er
 
 // ComplementSchema complement schema with field properties
 func (ps *tagBaseFieldParserV3) ComplementSchema(schema *spec.RefOrSpec[spec.Schema]) error {
-	if schema.Spec == nil {
-		componentSchema := ps.p.openAPI.Components.Spec.Schemas[strings.ReplaceAll(schema.Ref.Ref, "#/components/schemas/", "")]
-		if componentSchema == nil {
-			return fmt.Errorf("could not resolve schema for ref %s", schema.Ref.Ref)
-		}
-		schema = componentSchema
-	}
-
 	types := ps.p.GetSchemaTypePathV3(schema, 2)
 	if len(types) == 0 {
 		return fmt.Errorf("invalid type for field: %s", ps.field.Names[0])
 	}
 
 	if schema.Ref != nil { //IsRefSchema(schema)
-		// TODO fetch existing schema from components
 		var newSchema = spec.Schema{}
-		err := ps.complementSchema(&newSchema, types)
+		err := ps.complementSchema(&newSchema, types, ps.p.getSchemaByRef(schema.Ref))
 		if err != nil {
 			return err
 		}
 		if !reflect.ValueOf(newSchema).IsZero() {
-			newSchema.AllOf = []*spec.RefOrSpec[spec.Schema]{{Spec: schema.Spec}}
+			if newSchema.Extensions == nil {
+				newSchema.Extensions = make(map[string]any)
+			}
+			newSchema.Extensions["$ref"] = schema.Ref.Ref
 			*schema = spec.RefOrSpec[spec.Schema]{Spec: &newSchema}
 		}
 		return nil
 	}
 
-	return ps.complementSchema(schema.Spec, types)
+	return ps.complementSchema(schema.Spec, types, nil)
 }
 
 // complementSchema complement schema with field properties
-func (ps *tagBaseFieldParserV3) complementSchema(schema *spec.Schema, types []string) error {
+func (ps *tagBaseFieldParserV3) complementSchema(schema *spec.Schema, types []string, refSchema *spec.Schema) error {
 	if ps.field.Tag == nil {
 		if ps.field.Doc != nil {
 			schema.Description = strings.TrimSpace(ps.field.Doc.Text())
@@ -311,7 +315,7 @@ func (ps *tagBaseFieldParserV3) complementSchema(schema *spec.Schema, types []st
 			return err
 		}
 
-		schema.Default = value
+		field.defaultValue = value
 	}
 
 	schema.Example = field.exampleValue
@@ -367,6 +371,8 @@ func (ps *tagBaseFieldParserV3) complementSchema(schema *spec.Schema, types []st
 	}
 
 	elemSchema := schema
+	elemRefSchema := refSchema
+	var itemRef *spec.Ref
 
 	// Always apply defaultValue to the element schema
 	elemSchema.Default = field.defaultValue
@@ -377,9 +383,13 @@ func (ps *tagBaseFieldParserV3) complementSchema(schema *spec.Schema, types []st
 		schema.MinItems = field.minItems
 		schema.UniqueItems = &field.unique
 
-		elemSchema = schema.Items.Schema.Spec
-		if elemSchema == nil {
-			elemSchema = ps.p.getSchemaByRef(schema.Items.Schema.Ref)
+		if schema.Items.Schema.Ref != nil {
+			itemRef = schema.Items.Schema.Ref
+			elemSchema = &spec.Schema{}
+			elemRefSchema = ps.p.getSchemaByRef(itemRef)
+		} else {
+			elemSchema = schema.Items.Schema.Spec
+			elemRefSchema = nil
 		}
 
 		elemSchema.Format = field.formatType
@@ -390,11 +400,55 @@ func (ps *tagBaseFieldParserV3) complementSchema(schema *spec.Schema, types []st
 	elemSchema.MultipleOf = field.multipleOf
 	elemSchema.MaxLength = field.maxLength
 	elemSchema.MinLength = field.minLength
-	elemSchema.Enum = append(elemSchema.Enum, field.enums...)
+	if shouldApplyFieldEnumConstraint(field.enums, elemRefSchema) {
+		elemSchema.Enum = append(elemSchema.Enum, field.enums...)
+	}
 	elemSchema.Pattern = field.pattern
 	elemSchema.OneOf = oneOfSchemas
 
+	if itemRef != nil && !reflect.ValueOf(*elemSchema).IsZero() {
+		if elemSchema.Extensions == nil {
+			elemSchema.Extensions = make(map[string]any)
+		}
+		elemSchema.Extensions["$ref"] = itemRef.Ref
+		schema.Items.Schema = spec.NewRefOrSpec[spec.Schema](nil, elemSchema)
+	}
+
 	return nil
+}
+
+func shouldApplyFieldEnumConstraint(fieldEnums []interface{}, refSchema *spec.Schema) bool {
+	if len(fieldEnums) == 0 {
+		return false
+	}
+
+	if refSchema == nil || len(refSchema.Enum) == 0 {
+		return true
+	}
+
+	if len(fieldEnums) != len(refSchema.Enum) {
+		return true
+	}
+
+	used := make([]bool, len(refSchema.Enum))
+	for _, fieldEnum := range fieldEnums {
+		matched := false
+		for i, refEnum := range refSchema.Enum {
+			if used[i] {
+				continue
+			}
+			if reflect.DeepEqual(fieldEnum, refEnum) {
+				used[i] = true
+				matched = true
+				break
+			}
+		}
+		if !matched {
+			return true
+		}
+	}
+
+	return false
 }
 
 func getIntTagV3(structTag reflect.StructTag, tagName string) (*int, error) {
