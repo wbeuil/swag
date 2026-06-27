@@ -23,7 +23,8 @@ import (
 	"github.com/swaggo/swag/v2/asyncapi"
 	"golang.org/x/text/cases"
 	"golang.org/x/text/language"
-	"sigs.k8s.io/yaml"
+	sigyaml "sigs.k8s.io/yaml"
+	yaml "gopkg.in/yaml.v3"
 )
 
 var open = os.Open
@@ -38,6 +39,7 @@ type Gen struct {
 	json               func(data interface{}) ([]byte, error)
 	jsonIndent         func(data interface{}) ([]byte, error)
 	jsonToYAML         func(data []byte) ([]byte, error)
+	yamlMarshal        func(data interface{}) ([]byte, error)
 	outputTypeMap      map[string]genTypeWriter
 	asyncOutputTypeMap map[string]genTypeWriter
 	debug              Debugger
@@ -58,7 +60,8 @@ func New() *Gen {
 		jsonIndent: func(data interface{}) ([]byte, error) {
 			return json.MarshalIndent(data, "", "    ")
 		},
-		jsonToYAML: yaml.JSONToYAML,
+		jsonToYAML: sigyaml.JSONToYAML,
+		yamlMarshal: yaml.Marshal,
 		debug:      log.New(os.Stdout, "", log.LstdFlags),
 	}
 
@@ -378,7 +381,7 @@ func (g *Gen) writeJSON(config *Config, spec interface{}) error {
 }
 
 func (g *Gen) writeYAML(config *Config, swagger interface{}) error {
-	var filename = "swagger.yaml"
+	var filename = "openapi.yaml"
 
 	if config.State != "" {
 		filename = config.State + "_" + filename
@@ -390,14 +393,9 @@ func (g *Gen) writeYAML(config *Config, swagger interface{}) error {
 
 	yamlFileName := path.Join(config.OutputDir, filename)
 
-	b, err := g.json(swagger)
+	y, err := g.yamlMarshal(swagger)
 	if err != nil {
-		return err
-	}
-
-	y, err := g.jsonToYAML(b)
-	if err != nil {
-		return fmt.Errorf("cannot covert json to yaml error: %s", err)
+		return fmt.Errorf("cannot marshal to yaml error: %s", err)
 	}
 
 	err = g.writeFile(y, yamlFileName)
@@ -405,7 +403,7 @@ func (g *Gen) writeYAML(config *Config, swagger interface{}) error {
 		return err
 	}
 
-	g.debug.Printf("create swagger.yaml at %+v", yamlFileName)
+	g.debug.Printf("create openapi.yaml at %+v", yamlFileName)
 
 	return nil
 }
@@ -424,12 +422,7 @@ func (g *Gen) writeAsyncJSON(config *Config, spec interface{}) error {
 
 func (g *Gen) writeAsyncYAML(config *Config, spec interface{}) error {
 	asyncAPI := spec.(*asyncapi.AsyncAPI)
-	b, err := g.json(asyncAPI)
-	if err != nil {
-		return err
-	}
-
-	y, err := g.jsonToYAML(b)
+	y, err := g.yamlMarshal(asyncAPI)
 	if err != nil {
 		return err
 	}

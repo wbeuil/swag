@@ -36,7 +36,7 @@ func TestGen_Build(t *testing.T) {
 	expectedFiles := []string{
 		filepath.Join(config.OutputDir, "docs.go"),
 		filepath.Join(config.OutputDir, "openapi.json"),
-		filepath.Join(config.OutputDir, "swagger.yaml"),
+		filepath.Join(config.OutputDir, "openapi.yaml"),
 	}
 	for _, expectedFile := range expectedFiles {
 		if _, err := os.Stat(expectedFile); os.IsNotExist(err) {
@@ -63,7 +63,7 @@ func TestGen_SpecificOutputTypes(t *testing.T) {
 	}{
 		{filepath.Join(config.OutputDir, "docs.go"), true},
 		{filepath.Join(config.OutputDir, "openapi.json"), false},
-		{filepath.Join(config.OutputDir, "swagger.yaml"), false},
+		{filepath.Join(config.OutputDir, "openapi.yaml"), false},
 	}
 	for _, tc := range tt {
 		_, err := os.Stat(tc.expectedFile)
@@ -140,7 +140,7 @@ func TestGen_BuildInstanceName(t *testing.T) {
 	expectedFiles := []string{
 		filepath.Join(config.OutputDir, config.InstanceName+"_"+"docs.go"),
 		filepath.Join(config.OutputDir, config.InstanceName+"_"+"openapi.json"),
-		filepath.Join(config.OutputDir, config.InstanceName+"_"+"swagger.yaml"),
+		filepath.Join(config.OutputDir, config.InstanceName+"_"+"openapi.yaml"),
 	}
 
 	for _, expectedFile := range expectedFiles {
@@ -166,7 +166,7 @@ func TestGen_BuildSnakeCase(t *testing.T) {
 	expectedFiles := []string{
 		filepath.Join(config.OutputDir, "docs.go"),
 		filepath.Join(config.OutputDir, "openapi.json"),
-		filepath.Join(config.OutputDir, "swagger.yaml"),
+		filepath.Join(config.OutputDir, "openapi.yaml"),
 	}
 	for _, expectedFile := range expectedFiles {
 		if _, err := os.Stat(expectedFile); os.IsNotExist(err) {
@@ -191,7 +191,7 @@ func TestGen_BuildLowerCamelcase(t *testing.T) {
 	expectedFiles := []string{
 		filepath.Join(config.OutputDir, "docs.go"),
 		filepath.Join(config.OutputDir, "openapi.json"),
-		filepath.Join(config.OutputDir, "swagger.yaml"),
+		filepath.Join(config.OutputDir, "openapi.yaml"),
 	}
 	for _, expectedFile := range expectedFiles {
 		if _, err := os.Stat(expectedFile); os.IsNotExist(err) {
@@ -216,7 +216,7 @@ func TestGen_BuildDescriptionWithQuotes(t *testing.T) {
 	expectedFiles := []string{
 		filepath.Join(config.OutputDir, "docs.go"),
 		filepath.Join(config.OutputDir, "openapi.json"),
-		filepath.Join(config.OutputDir, "swagger.yaml"),
+		filepath.Join(config.OutputDir, "openapi.yaml"),
 	}
 	for _, expectedFile := range expectedFiles {
 		if _, err := os.Stat(expectedFile); os.IsNotExist(err) {
@@ -276,7 +276,7 @@ func TestGen_BuildDocCustomDelims(t *testing.T) {
 	expectedFiles := []string{
 		filepath.Join(config.OutputDir, "CustomDelims_docs.go"),
 		filepath.Join(config.OutputDir, "CustomDelims_openapi.json"),
-		filepath.Join(config.OutputDir, "CustomDelims_swagger.yaml"),
+		filepath.Join(config.OutputDir, "CustomDelims_openapi.yaml"),
 	}
 	for _, expectedFile := range expectedFiles {
 		if _, err := os.Stat(expectedFile); os.IsNotExist(err) {
@@ -347,7 +347,7 @@ func TestGen_jsonToYAML(t *testing.T) {
 	}
 
 	gen := New()
-	gen.jsonToYAML = func(data []byte) ([]byte, error) {
+	gen.yamlMarshal = func(data interface{}) ([]byte, error) {
 		return nil, errors.New("fail")
 	}
 	assert.Error(t, gen.Build(config))
@@ -424,9 +424,9 @@ func TestGen_FailToWrite(t *testing.T) {
 		require.NoError(t, err)
 	}
 
-	_ = os.RemoveAll(filepath.Join(outputDir, "swagger.yaml"))
+	_ = os.RemoveAll(filepath.Join(outputDir, "openapi.yaml"))
 
-	err = os.Mkdir(filepath.Join(outputDir, "swagger.yaml"), 0755)
+	err = os.Mkdir(filepath.Join(outputDir, "openapi.yaml"), 0755)
 	if err != nil {
 		require.NoError(t, err)
 	}
@@ -468,7 +468,7 @@ func TestGen_configWithOutputDir(t *testing.T) {
 	expectedFiles := []string{
 		filepath.Join(config.OutputDir, "docs.go"),
 		filepath.Join(config.OutputDir, "openapi.json"),
-		filepath.Join(config.OutputDir, "swagger.yaml"),
+		filepath.Join(config.OutputDir, "openapi.yaml"),
 	}
 	for _, expectedFile := range expectedFiles {
 		if _, err := os.Stat(expectedFile); os.IsNotExist(err) {
@@ -496,7 +496,7 @@ func TestGen_configWithOutputTypesAll(t *testing.T) {
 	expectedFiles := []string{
 		path.Join(config.OutputDir, "docs.go"),
 		path.Join(config.OutputDir, "openapi.json"),
-		path.Join(config.OutputDir, "swagger.yaml"),
+		path.Join(config.OutputDir, "openapi.yaml"),
 	}
 	for _, expectedFile := range expectedFiles {
 		if _, err := os.Stat(expectedFile); os.IsNotExist(err) {
@@ -527,6 +527,8 @@ func TestGen_configWithOutputTypesSingle(t *testing.T) {
 		case "go":
 			outFileName = "docs"
 		case "json":
+			outFileName = "openapi"
+		case "yaml":
 			outFileName = "openapi"
 		}
 
@@ -604,7 +606,7 @@ func TestGen_GeneratedDoc(t *testing.T) {
 	expectedFiles := []string{
 		filepath.Join(config.OutputDir, "docs.go"),
 		filepath.Join(config.OutputDir, "openapi.json"),
-		filepath.Join(config.OutputDir, "swagger.yaml"),
+		filepath.Join(config.OutputDir, "openapi.yaml"),
 	}
 	for _, expectedFile := range expectedFiles {
 		if _, err := os.Stat(expectedFile); os.IsNotExist(err) {
@@ -630,7 +632,7 @@ func TestGen_cgoImports(t *testing.T) {
 	expectedFiles := []string{
 		filepath.Join(config.OutputDir, "docs.go"),
 		filepath.Join(config.OutputDir, "openapi.json"),
-		filepath.Join(config.OutputDir, "swagger.yaml"),
+		filepath.Join(config.OutputDir, "openapi.yaml"),
 	}
 	for _, expectedFile := range expectedFiles {
 		if _, err := os.Stat(expectedFile); os.IsNotExist(err) {
@@ -804,7 +806,7 @@ func TestGen_Debugger(t *testing.T) {
 	expectedFiles := []string{
 		filepath.Join(config.OutputDir, "docs.go"),
 		filepath.Join(config.OutputDir, "openapi.json"),
-		filepath.Join(config.OutputDir, "swagger.yaml"),
+		filepath.Join(config.OutputDir, "openapi.yaml"),
 	}
 	for _, expectedFile := range expectedFiles {
 		if _, err := os.Stat(expectedFile); os.IsNotExist(err) {
@@ -829,7 +831,7 @@ func TestGen_ErrorAndInterface(t *testing.T) {
 	expectedFiles := []string{
 		filepath.Join(config.OutputDir, "docs.go"),
 		filepath.Join(config.OutputDir, "openapi.json"),
-		filepath.Join(config.OutputDir, "swagger.yaml"),
+		filepath.Join(config.OutputDir, "openapi.yaml"),
 	}
 	t.Cleanup(func() {
 		for _, expectedFile := range expectedFiles {
@@ -872,7 +874,7 @@ func TestGen_StateAdmin(t *testing.T) {
 	expectedFiles := []string{
 		filepath.Join(config.OutputDir, "admin_docs.go"),
 		filepath.Join(config.OutputDir, "admin_openapi.json"),
-		filepath.Join(config.OutputDir, "admin_swagger.yaml"),
+		filepath.Join(config.OutputDir, "admin_openapi.yaml"),
 	}
 	t.Cleanup(func() {
 		for _, expectedFile := range expectedFiles {
@@ -911,7 +913,7 @@ func TestGen_StateUser(t *testing.T) {
 	expectedFiles := []string{
 		filepath.Join(config.OutputDir, "user_docs.go"),
 		filepath.Join(config.OutputDir, "user_openapi.json"),
-		filepath.Join(config.OutputDir, "user_swagger.yaml"),
+		filepath.Join(config.OutputDir, "user_openapi.yaml"),
 	}
 	t.Cleanup(func() {
 		for _, expectedFile := range expectedFiles {

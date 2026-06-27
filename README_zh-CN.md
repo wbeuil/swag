@@ -87,7 +87,7 @@ OPTIONS:
    --dir value, -d value                  API解析目录 (默认: "./")
    --exclude value                        解析扫描时排除的目录，多个目录可用逗号分隔（默认：空）
    --propertyStrategy value, -p value     结构体字段命名规则，三种：snakecase,camelcase,pascalcase (默认: "camelcase")
-   --output value, -o value               文件(swagger.json, swagger.yaml and doc.go)输出目录 (默认: "./docs")
+   --output value, -o value               文件(swagger.json, openapi.yaml and doc.go)输出目录 (默认: "./docs")
    --parseVendor                          是否解析vendor目录里的go源文件，默认不
    --parseDependency                      是否解析依赖目录中的go源文件，默认不
    --parseDependencyLevel, --pdl          对'--parseDependency'参数进行增强, 是否解析依赖目录中的go源文件, 0 不解析, 1 只解析对象模型, 2 只解析API, 3 对象模型和API都解析 (default: 0)

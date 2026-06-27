@@ -9,7 +9,7 @@ require (
 	github.com/go-openapi/spec v0.20.9
 	github.com/stretchr/testify v1.11.1
 	github.com/urfave/cli/v2 v2.27.5
-	github.com/wbeuil/openapi v1.3.1
+	github.com/wbeuil/openapi v1.3.2
 	golang.org/x/text v0.15.0
 	golang.org/x/tools v0.8.0
 	gopkg.in/yaml.v3 v3.0.1
