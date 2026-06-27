@@ -241,7 +241,7 @@ func Test_splitComment2(t *testing.T) {
 				attr: "@param",
 				body: "   data body web.GenericBodyMulti[[]types.Post, [][]types.Post]",
 			},
-			"\tdata\tbody\tweb.GenericBodyMulti[[]types.Post, [][]types.Post]",
+			"	data	body	web.GenericBodyMulti[[]types.Post, [][]types.Post]",
 		},
 		{
 			"test_splitComment2_2",
@@ -249,7 +249,7 @@ func Test_splitComment2(t *testing.T) {
 				attr: "@param",
 				body: `   some_id      path   int     true  "Some ID" Format(int64)`,
 			},
-			"\tsome_id\tpath\tint\ttrue\t\"Some ID\"\tFormat(int64)",
+			"	some_id	path	int	true	\"Some ID\"	Format(int64)",
 		},
 		{
 			"test_splitComment2_3",
@@ -257,7 +257,24 @@ func Test_splitComment2(t *testing.T) {
 				attr: "@param",
 				body: `   @Param   some_id      body web.Pet true  "Some ID"`,
 			},
-			"\t@Param\tsome_id\tbody\tweb.Pet\ttrue\t\"Some ID\"",
+			"	@Param	some_id	body	web.Pet	true	\"Some ID\"",
+		},
+		// AsyncAPI attributes
+		{
+			"test_splitComment2_async_message",
+			args{
+				attr: "@asyncMessage",
+				body: `   {object} UserEvent "A user event message" application/json`,
+			},
+			"	{object}	UserEvent	\"A user event message\"	application/json",
+		},
+		{
+			"test_splitComment2_async_channel",
+			args{
+				attr: "@asyncChannel",
+				body: `   userEvents`,
+			},
+			"	userEvents",
 		},
 	}
 	for _, tt := range tests {
