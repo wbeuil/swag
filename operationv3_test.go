@@ -154,6 +154,57 @@ func TestParseRouterCommentMethodMissingErrV3(t *testing.T) {
 	assert.Error(t, err)
 }
 
+func TestParseWebhookCommentV3(t *testing.T) {
+	t.Parallel()
+
+	comment := `/@webhook stripeEvent [post]`
+	operation := NewOperationV3(nil)
+	err := operation.ParseComment(comment, nil)
+	require.NoError(t, err)
+
+	assert.Len(t, operation.WebhookProperties, 1)
+	assert.Equal(t, "stripeEvent", operation.WebhookProperties[0].Name)
+	assert.Equal(t, "POST", operation.WebhookProperties[0].HTTPMethod)
+}
+
+func TestParseWebhookMultipleCommentsV3(t *testing.T) {
+	t.Parallel()
+
+	comment := `/@webhook stripeEvent [post]`
+	anotherComment := `/@webhook githubEvent [put]`
+	operation := NewOperationV3(nil)
+
+	err := operation.ParseComment(comment, nil)
+	require.NoError(t, err)
+
+	err = operation.ParseComment(anotherComment, nil)
+	require.NoError(t, err)
+
+	assert.Len(t, operation.WebhookProperties, 2)
+	assert.Equal(t, "stripeEvent", operation.WebhookProperties[0].Name)
+	assert.Equal(t, "POST", operation.WebhookProperties[0].HTTPMethod)
+	assert.Equal(t, "githubEvent", operation.WebhookProperties[1].Name)
+	assert.Equal(t, "PUT", operation.WebhookProperties[1].HTTPMethod)
+}
+
+func TestParseWebhookCommentInvalidMethodV3(t *testing.T) {
+	t.Parallel()
+
+	comment := `/@webhook stripeEvent [invalid]`
+	operation := NewOperationV3(nil)
+	err := operation.ParseComment(comment, nil)
+	assert.Error(t, err)
+}
+
+func TestParseWebhookCommentMissingMethodV3(t *testing.T) {
+	t.Parallel()
+
+	comment := `/@webhook stripeEvent`
+	operation := NewOperationV3(nil)
+	err := operation.ParseComment(comment, nil)
+	assert.Error(t, err)
+}
+
 func TestOperation_ParseResponseWithDefaultV3(t *testing.T) {
 	t.Parallel()
 

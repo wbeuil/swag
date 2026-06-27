@@ -77,23 +77,27 @@ const (
 	discriminatorAttr        = "@discriminator"
 
 	// AsyncAPI annotations
-	asyncapiAttr              = "@asyncapi"
-	asyncTitleAttr            = "@asynctitle"
-	asyncVersionAttr          = "@asyncversion"
-	asyncDescriptionAttr      = "@asyncdescription"
-	asyncLicenseNameAttr      = "@asynclicense.name"
-	asyncLicenseURLAttr       = "@asynclicense.url"
+	asyncapiAttr                = "@asyncapi"
+	asyncTitleAttr              = "@asynctitle"
+	asyncVersionAttr            = "@asyncversion"
+	asyncDescriptionAttr        = "@asyncdescription"
+	asyncLicenseNameAttr        = "@asynclicense.name"
+	asyncLicenseURLAttr         = "@asynclicense.url"
 	asyncDefaultContentTypeAttr = "@asyncdefaultcontenttype"
-	asyncServerAttr           = "@asyncserver"
-	asyncChannelAttr          = "@asyncchannel"
-	asyncOperationAttr        = "@asyncoperation"
-	asyncActionAttr           = "@asyncaction"
-	asyncMessageAttr          = "@asyncmessage"
-	asyncSummaryAttr          = "@asyncsummary"
-	asyncTagAttr              = "@asynctag"
-	asyncBindingAttr          = "@asyncbinding"
-	asyncExternalDocsDescAttr = "@asyncexternaldocs.description"
-	asyncExternalDocsURLAttr  = "@asyncexternaldocs.url"
+	asyncServerAttr             = "@asyncserver"
+	asyncChannelAttr            = "@asyncchannel"
+	asyncOperationAttr          = "@asyncoperation"
+	asyncActionAttr             = "@asyncaction"
+	asyncMessageAttr            = "@asyncmessage"
+	asyncSummaryAttr            = "@asyncsummary"
+	asyncTagAttr                = "@asynctag"
+	asyncBindingAttr            = "@asyncbinding"
+	asyncExternalDocsDescAttr   = "@asyncexternaldocs.description"
+	asyncExternalDocsURLAttr    = "@asyncexternaldocs.url"
+
+	// OpenAPI v3 annotations
+	webhookAttr       = "@webhook"
+	schemaDialectAttr = "@schemadialect"
 )
 
 // ParseFlag determine what to parse
@@ -132,6 +136,7 @@ var allMethod = map[string]struct{}{
 	http.MethodOptions: {},
 	http.MethodHead:    {},
 	http.MethodPatch:   {},
+	http.MethodTrace:   {},
 }
 
 // Parser implements a parser for Go source files.
@@ -289,7 +294,7 @@ func New(options ...func(*Parser)) *Parser {
 		},
 		openAPI: &openapi.OpenAPI{
 			Info:         openapi.NewInfo(),
-			OpenAPI:      "3.1.0",
+			OpenAPI:      "3.1.1",
 			Components:   openapi.NewComponents(),
 			ExternalDocs: openapi.NewExternalDocs(),
 			Paths:        openapi.NewPaths(),
@@ -2134,6 +2139,9 @@ func (parser *Parser) checkOperationIDUniqueness() error {
 
 		for method = range allMethod {
 			op := refRouteMethodOp(&item, method)
+			if op == nil {
+				continue
+			}
 			if *op != nil {
 				id = (**op).ID
 

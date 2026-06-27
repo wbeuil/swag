@@ -26,6 +26,12 @@ type RouteProperties struct {
 	Deprecated bool
 }
 
+// WebhookProperties describes HTTP properties of a single webhook comment.
+type WebhookProperties struct {
+	Name       string
+	HTTPMethod string
+}
+
 // Operation describes a single API operation on a path.
 // For more information: https://github.com/swaggo/swag#api-operation
 type Operation struct {
@@ -744,6 +750,7 @@ func parseSingleMimeType(mimeType string) (string, error) {
 }
 
 var routerPattern = regexp.MustCompile(`^(/[\w./\-{}\(\)+:$]*)[[:blank:]]+\[(\w+)]`)
+var webhookPattern = regexp.MustCompile(`^([\w./\-{}\(\)+:$]+)[[:blank:]]+\[(\w+)]`)
 
 // ParseRouterComment parses comment for given `router` comment string.
 func (operation *Operation) ParseRouterComment(commentLine string, deprecated bool) error {

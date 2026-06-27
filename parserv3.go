@@ -58,6 +58,8 @@ func (p *Parser) parseGeneralAPIInfoV3(comments []string) error {
 		switch attr := strings.ToLower(attribute); attr {
 		case versionAttr, titleAttr, tosAttr, licNameAttr, licURLAttr, conNameAttr, conURLAttr, conEmailAttr:
 			setspecInfo(p.openAPI, attr, value)
+		case schemaDialectAttr:
+			p.openAPI.JsonSchemaDialect = value
 		case descriptionAttr:
 			if previousAttribute == attribute {
 				p.openAPI.Info.Spec.Description += "\n" + value
@@ -562,7 +564,51 @@ func (p *Parser) ParseRouterAPIInfoV3(fileInfo *AstFileInfo) error {
 			if err != nil {
 				return err
 			}
+
+			err = processWebhookOperationV3(p, operation)
+			if err != nil {
+				return err
+			}
 		}
+	}
+
+	return nil
+}
+
+func processWebhookOperationV3(p *Parser, o *OperationV3) error {
+	for _, webhookProperties := range o.WebhookProperties {
+		var (
+			pathItem *spec.RefOrSpec[spec.Extendable[spec.PathItem]]
+			ok       bool
+		)
+
+		pathItem, ok = p.openAPI.WebHooks[webhookProperties.Name]
+		if !ok {
+			pathItem = &spec.RefOrSpec[spec.Extendable[spec.PathItem]]{
+				Spec: &spec.Extendable[spec.PathItem]{
+					Spec: &spec.PathItem{},
+				},
+			}
+		}
+
+		op := refRouteMethodOpV3(pathItem.Spec.Spec, webhookProperties.HTTPMethod)
+		if op == nil {
+			return fmt.Errorf("invalid method: %s", webhookProperties.HTTPMethod)
+		}
+
+		// check if we already have an operation for this webhook and method
+		if *op != nil {
+			err := fmt.Errorf("webhook %s %s is declared multiple times", webhookProperties.HTTPMethod, webhookProperties.Name)
+			if p.Strict {
+				return err
+			}
+
+			p.debug.Printf("warning: %s\n", err)
+		}
+
+		*op = &o.Operation
+
+		p.openAPI.WebHooks[webhookProperties.Name] = pathItem
 	}
 
 	return nil
@@ -641,6 +687,11 @@ func refRouteMethodOpV3(item *spec.PathItem, method string) **spec.Operation {
 			item.Options = &spec.Extendable[spec.Operation]{}
 		}
 		return &item.Options.Spec
+	case http.MethodTrace:
+		if item.Trace == nil {
+			item.Trace = &spec.Extendable[spec.Operation]{}
+		}
+		return &item.Trace.Spec
 	default:
 		return nil
 	}

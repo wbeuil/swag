@@ -35,12 +35,12 @@ type genTypeWriter func(*Config, interface{}) error
 
 // Gen presents a generate tool for swag.
 type Gen struct {
-	json             func(data interface{}) ([]byte, error)
-	jsonIndent       func(data interface{}) ([]byte, error)
-	jsonToYAML       func(data []byte) ([]byte, error)
-	outputTypeMap    map[string]genTypeWriter
+	json               func(data interface{}) ([]byte, error)
+	jsonIndent         func(data interface{}) ([]byte, error)
+	jsonToYAML         func(data []byte) ([]byte, error)
+	outputTypeMap      map[string]genTypeWriter
 	asyncOutputTypeMap map[string]genTypeWriter
-	debug            Debugger
+	debug              Debugger
 }
 
 //go:embed src/*.tmpl
