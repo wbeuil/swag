@@ -10,7 +10,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/sv-tools/openapi/spec"
+	"github.com/wbeuil/openapi"
 	"gopkg.in/yaml.v3"
 )
 
@@ -24,7 +24,7 @@ type parsedDiscriminator struct {
 type OperationV3 struct {
 	parser              *Parser
 	codeExampleFilesDir string
-	spec.Operation
+	openapi.Operation
 	RouterProperties  []RouteProperties
 	WebhookProperties []WebhookProperties
 	responseMimeTypes []string
@@ -33,8 +33,8 @@ type OperationV3 struct {
 
 // NewOperationV3 returns a new instance of OperationV3.
 func NewOperationV3(parser *Parser, options ...func(*OperationV3)) *OperationV3 {
-	op := *spec.NewOperation().Spec
-	op.Responses = spec.NewResponses()
+	op := *openapi.NewOperation().Spec
+	op.Responses = openapi.NewResponses()
 
 	operation := &OperationV3{
 		parser:    parser,
@@ -168,11 +168,11 @@ func (o *OperationV3) ParseAcceptComment(commentLine string) error {
 	}
 
 	if o.RequestBody == nil {
-		o.RequestBody = spec.NewRequestBodySpec()
+		o.RequestBody = openapi.NewRequestBodySpec()
 	}
 
 	if o.RequestBody.Spec.Spec.Content == nil {
-		o.RequestBody.Spec.Spec.Content = make(map[string]*spec.Extendable[spec.MediaType], len(validTypes))
+		o.RequestBody.Spec.Spec.Content = make(map[string]*openapi.Extendable[openapi.MediaType], len(validTypes))
 	}
 
 	for _, value := range validTypes {
@@ -181,12 +181,12 @@ func (o *OperationV3) ParseAcceptComment(commentLine string) error {
 			continue
 		}
 
-		mediaType := spec.NewMediaType()
-		schema := spec.NewSchemaSpec()
+		mediaType := openapi.NewMediaType()
+		schema := openapi.NewSchemaSpec()
 
 		switch value {
 		case "application/json", "multipart/form-data", "text/xml":
-			schema.Spec.Type = &spec.SingleOrArray[string]{OBJECT}
+			schema.Spec.Type = &openapi.SingleOrArray[string]{OBJECT}
 		case "image/png",
 			"image/jpeg",
 			"image/gif",
@@ -197,10 +197,10 @@ func (o *OperationV3) ParseAcceptComment(commentLine string) error {
 			"application/vnd.openxmlformats-officedocument.wordprocessingml.document",
 			"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
 			"application/vnd.openxmlformats-officedocument.presentationml.presentation":
-			schema.Spec.Type = &spec.SingleOrArray[string]{STRING}
+			schema.Spec.Type = &openapi.SingleOrArray[string]{STRING}
 			schema.Spec.Format = "binary"
 		default:
-			schema.Spec.Type = &spec.SingleOrArray[string]{STRING}
+			schema.Spec.Type = &openapi.SingleOrArray[string]{STRING}
 		}
 
 		mediaType.Spec.Schema = schema
@@ -234,7 +234,7 @@ func (o *OperationV3) ProcessProduceComment() error {
 
 	for _, value := range o.responseMimeTypes {
 		if o.Responses.Spec.Response == nil {
-			o.Responses.Spec.Response = make(map[string]*spec.RefOrSpec[spec.Extendable[spec.Response]], len(o.responseMimeTypes))
+			o.Responses.Spec.Response = make(map[string]*openapi.RefOrSpec[openapi.Extendable[openapi.Response]], len(o.responseMimeTypes))
 		}
 
 		for key, response := range o.Responses.Spec.Response {
@@ -259,12 +259,12 @@ func (o *OperationV3) ProcessProduceComment() error {
 				continue
 			}
 
-			mediaType := spec.NewMediaType()
-			schema := spec.NewSchemaSpec()
+			mediaType := openapi.NewMediaType()
+			schema := openapi.NewSchemaSpec()
 
 			switch value {
 			case "application/json", "multipart/form-data", "text/xml":
-				schema.Spec.Type = &spec.SingleOrArray[string]{OBJECT}
+				schema.Spec.Type = &openapi.SingleOrArray[string]{OBJECT}
 			case "image/png",
 				"image/jpeg",
 				"image/gif",
@@ -275,16 +275,16 @@ func (o *OperationV3) ProcessProduceComment() error {
 				"application/vnd.openxmlformats-officedocument.wordprocessingml.document",
 				"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
 				"application/vnd.openxmlformats-officedocument.presentationml.presentation":
-				schema.Spec.Type = &spec.SingleOrArray[string]{STRING}
+				schema.Spec.Type = &openapi.SingleOrArray[string]{STRING}
 				schema.Spec.Format = "binary"
 			default:
-				schema.Spec.Type = &spec.SingleOrArray[string]{STRING}
+				schema.Spec.Type = &openapi.SingleOrArray[string]{STRING}
 			}
 
 			mediaType.Spec.Schema = schema
 
 			if response.Spec.Spec.Content == nil {
-				response.Spec.Spec.Content = make(map[string]*spec.Extendable[spec.MediaType])
+				response.Spec.Spec.Content = make(map[string]*openapi.Extendable[openapi.MediaType])
 			}
 
 			response.Spec.Spec.Content[value] = mediaType
@@ -423,8 +423,8 @@ func (o *OperationV3) ParseParamComment(commentLine string, astFile *ast.File) e
 
 				itemParam.Schema.Spec = prop
 
-				listItem := &spec.RefOrSpec[spec.Extendable[spec.Parameter]]{
-					Spec: &spec.Extendable[spec.Parameter]{
+				listItem := &openapi.RefOrSpec[openapi.Extendable[openapi.Parameter]]{
+					Spec: &openapi.Extendable[openapi.Parameter]{
 						Spec: &itemParam,
 					},
 				}
@@ -486,7 +486,7 @@ func (o *OperationV3) ParseParamComment(commentLine string, astFile *ast.File) e
 		return err
 	}
 
-	item := spec.NewRefOrSpec(nil, &spec.Extendable[spec.Parameter]{
+	item := openapi.NewRefOrSpecCompat(nil, &openapi.Extendable[openapi.Parameter]{
 		Spec: &param,
 	})
 
@@ -495,17 +495,17 @@ func (o *OperationV3) ParseParamComment(commentLine string, astFile *ast.File) e
 	return nil
 }
 
-func (o *OperationV3) fillRequestBody(name string, schema *spec.RefOrSpec[spec.Schema], required bool, description string, primitive, formData bool) {
+func (o *OperationV3) fillRequestBody(name string, schema *openapi.RefOrSpec[openapi.Schema], required bool, description string, primitive, formData bool) {
 	if o.RequestBody == nil {
-		o.RequestBody = spec.NewRequestBodySpec()
-		o.RequestBody.Spec.Spec.Content = make(map[string]*spec.Extendable[spec.MediaType])
+		o.RequestBody = openapi.NewRequestBodySpec()
+		o.RequestBody.Spec.Spec.Content = make(map[string]*openapi.Extendable[openapi.MediaType])
 
 		if primitive && !formData {
-			o.RequestBody.Spec.Spec.Content["text/plain"] = spec.NewMediaType()
+			o.RequestBody.Spec.Spec.Content["text/plain"] = openapi.NewMediaType()
 		} else if formData {
-			o.RequestBody.Spec.Spec.Content["application/x-www-form-urlencoded"] = spec.NewMediaType()
+			o.RequestBody.Spec.Spec.Content["application/x-www-form-urlencoded"] = openapi.NewMediaType()
 		} else {
-			o.RequestBody.Spec.Spec.Content["application/json"] = spec.NewMediaType()
+			o.RequestBody.Spec.Spec.Content["application/json"] = openapi.NewMediaType()
 		}
 	}
 
@@ -533,7 +533,7 @@ func (o *OperationV3) fillRequestBody(name string, schema *spec.RefOrSpec[spec.S
 	}
 }
 
-func (o *OperationV3) parseParamAttribute(comment, objectType, schemaType string, param *spec.Parameter) error {
+func (o *OperationV3) parseParamAttribute(comment, objectType, schemaType string, param *openapi.Parameter) error {
 	if param == nil {
 		return fmt.Errorf("cannot parse empty parameter for comment: %s", comment)
 	}
@@ -580,7 +580,7 @@ func (o *OperationV3) parseParamAttribute(comment, objectType, schemaType string
 	return nil
 }
 
-func (o *OperationV3) parseParamAttributeForBody(comment, objectType, schemaType string, param *spec.Schema) error {
+func (o *OperationV3) parseParamAttributeForBody(comment, objectType, schemaType string, param *openapi.Schema) error {
 	schemaType = TransToValidSchemeType(schemaType)
 
 	for attrKey, re := range regexAttributes {
@@ -616,7 +616,7 @@ func (o *OperationV3) parseParamAttributeForBody(comment, objectType, schemaType
 	return nil
 }
 
-func setCollectionFormatParamV3(param *spec.Parameter, name, schemaType, attr, commentLine string) error {
+func setCollectionFormatParamV3(param *openapi.Parameter, name, schemaType, attr, commentLine string) error {
 	if schemaType == ARRAY {
 		param.Style = TransToValidCollectionFormatV3(attr, param.In)
 		return nil
@@ -625,7 +625,7 @@ func setCollectionFormatParamV3(param *spec.Parameter, name, schemaType, attr, c
 	return fmt.Errorf("%s is attribute to set to an array. comment=%s got=%s", name, commentLine, schemaType)
 }
 
-func setSchemaExampleV3(param *spec.Schema, schemaType string, value string) error {
+func setSchemaExampleV3(param *openapi.Schema, schemaType string, value string) error {
 	val, err := defineType(schemaType, value)
 	if err != nil {
 		return nil // Don't set a example value if it's not valid
@@ -647,18 +647,7 @@ func setSchemaExampleV3(param *spec.Schema, schemaType string, value string) err
 	return nil
 }
 
-func setExampleParameterV3(param *spec.Parameter, schemaType string, value string) error {
-	val, err := defineType(schemaType, value)
-	if err != nil {
-		return nil // Don't set a example value if it's not valid
-	}
-
-	param.Example = val
-
-	return nil
-}
-
-func setStringParamV3(param *spec.Schema, name, schemaType, attr, commentLine string) error {
+func setStringParamV3(param *openapi.Schema, name, schemaType, attr, commentLine string) error {
 	if schemaType != STRING {
 		return fmt.Errorf("%s is attribute to set to a number. comment=%s got=%s", name, commentLine, schemaType)
 	}
@@ -678,7 +667,7 @@ func setStringParamV3(param *spec.Schema, name, schemaType, attr, commentLine st
 	return nil
 }
 
-func setDefaultV3(param *spec.Schema, schemaType string, value string) error {
+func setDefaultV3(param *openapi.Schema, schemaType string, value string) error {
 	val, err := defineType(schemaType, value)
 	if err != nil {
 		return nil // Don't set a default value if it's not valid
@@ -689,7 +678,7 @@ func setDefaultV3(param *spec.Schema, schemaType string, value string) error {
 	return nil
 }
 
-func setEnumParamV3(param *spec.Schema, attr, objectType, schemaType string) error {
+func setEnumParamV3(param *openapi.Schema, attr, objectType, schemaType string) error {
 	for _, e := range strings.Split(attr, ",") {
 		e = strings.TrimSpace(e)
 
@@ -709,7 +698,7 @@ func setEnumParamV3(param *spec.Schema, attr, objectType, schemaType string) err
 	return nil
 }
 
-func setNumberParamV3(param *spec.Schema, name, schemaType, attr, commentLine string) error {
+func setNumberParamV3(param *openapi.Schema, name, schemaType, attr, commentLine string) error {
 	switch schemaType {
 	case INTEGER, NUMBER:
 		n, err := strconv.Atoi(attr)
@@ -719,9 +708,11 @@ func setNumberParamV3(param *spec.Schema, name, schemaType, attr, commentLine st
 
 		switch name {
 		case minimumTag:
-			param.Minimum = &n
+			f := float64(n)
+			param.Minimum = &f
 		case maximumTag:
-			param.Maximum = &n
+			f := float64(n)
+			param.Maximum = &f
 		}
 
 		return nil
@@ -730,7 +721,7 @@ func setNumberParamV3(param *spec.Schema, name, schemaType, attr, commentLine st
 	}
 }
 
-func (o *OperationV3) parseAPIObjectSchema(commentLine, schemaType, refType string, astFile *ast.File) (*spec.RefOrSpec[spec.Schema], error) {
+func (o *OperationV3) parseAPIObjectSchema(commentLine, schemaType, refType string, astFile *ast.File) (*openapi.RefOrSpec[openapi.Schema], error) {
 	if strings.HasSuffix(refType, ",") && strings.Contains(refType, "[") {
 		// regexp may have broken generic syntax. find closing bracket and add it back
 		allMatchesLenOffset := strings.Index(commentLine, refType) + len(refType)
@@ -755,9 +746,9 @@ func (o *OperationV3) parseAPIObjectSchema(commentLine, schemaType, refType stri
 			return nil, err
 		}
 
-		result := spec.NewSchemaSpec()
-		result.Spec.Type = &spec.SingleOrArray[string]{ARRAY}
-		result.Spec.Items = spec.NewBoolOrSchema(false, schema) // TODO: allowed?
+		result := openapi.NewSchemaSpec()
+		result.Spec.Type = &openapi.SingleOrArray[string]{ARRAY}
+		result.Spec.Items = openapi.NewBoolOrSchemaCompat(false, schema) // TODO: allowed?
 		return result, nil
 
 	default:
@@ -808,7 +799,7 @@ func (o *OperationV3) ParseWebhookComment(commentLine string) error {
 }
 
 func (o *OperationV3) ParseServerURLComment(commentLine string) error {
-	server := spec.NewServer()
+	server := openapi.NewServer()
 	server.Spec.URL = commentLine
 	o.Servers = append(o.Servers, server)
 	return nil
@@ -820,15 +811,15 @@ func (o *OperationV3) ParseServerDescriptionComment(commentLine string) error {
 	return nil
 }
 
-// createParameter returns swagger spec.Parameter for given  paramType, description, paramName, schemaType, required.
-func createParameterV3(in, description, paramName, objectType, schemaType string, required bool, enums []interface{}, collectionFormat string) spec.Parameter {
+// createParameter returns swagger openapi.Parameter for given  paramType, description, paramName, schemaType, required.
+func createParameterV3(in, description, paramName, objectType, schemaType string, required bool, enums []interface{}, collectionFormat string) openapi.Parameter {
 	// //five possible parameter types. 	query, path, body, header, form
-	result := spec.Parameter{
+	result := openapi.Parameter{
 		Description: description,
 		Required:    required,
 		Name:        paramName,
 		In:          in,
-		Schema:      spec.NewRefOrSpec(nil, &spec.Schema{}),
+		Schema:      openapi.NewRefOrSpecCompat(nil, &openapi.Schema{}),
 	}
 
 	if in == "body" {
@@ -837,23 +828,23 @@ func createParameterV3(in, description, paramName, objectType, schemaType string
 
 	switch objectType {
 	case ARRAY:
-		result.Schema.Spec.Type = &spec.SingleOrArray[string]{objectType}
-		result.Schema.Spec.Items = spec.NewBoolOrSchema(false, spec.NewSchemaSpec())
-		result.Schema.Spec.Items.Schema.Spec.Type = &spec.SingleOrArray[string]{schemaType}
+		result.Schema.Spec.Type = &openapi.SingleOrArray[string]{objectType}
+		result.Schema.Spec.Items = openapi.NewBoolOrSchemaCompat(false, openapi.NewSchemaSpec())
+		result.Schema.Spec.Items.Schema.Spec.Type = &openapi.SingleOrArray[string]{schemaType}
 		result.Schema.Spec.Enum = enums
 	case PRIMITIVE, OBJECT:
-		result.Schema.Spec.Type = &spec.SingleOrArray[string]{schemaType}
+		result.Schema.Spec.Type = &openapi.SingleOrArray[string]{schemaType}
 		result.Schema.Spec.Enum = enums
 	}
 
 	return result
 }
 
-func (o *OperationV3) parseObjectSchema(refType string, astFile *ast.File) (*spec.RefOrSpec[spec.Schema], error) {
+func (o *OperationV3) parseObjectSchema(refType string, astFile *ast.File) (*openapi.RefOrSpec[openapi.Schema], error) {
 	return parseObjectSchemaV3(o.parser, refType, astFile)
 }
 
-func parseObjectSchemaV3(parser *Parser, refType string, astFile *ast.File) (*spec.RefOrSpec[spec.Schema], error) {
+func parseObjectSchemaV3(parser *Parser, refType string, astFile *ast.File) (*openapi.RefOrSpec[openapi.Schema], error) {
 	switch {
 	case refType == NIL:
 		return nil, nil
@@ -873,9 +864,9 @@ func parseObjectSchemaV3(parser *Parser, refType string, astFile *ast.File) (*sp
 			return nil, err
 		}
 
-		result := spec.NewSchemaSpec()
-		result.Spec.Type = &spec.SingleOrArray[string]{ARRAY}
-		result.Spec.Items = spec.NewBoolOrSchema(false, schema)
+		result := openapi.NewSchemaSpec()
+		result.Spec.Type = &openapi.SingleOrArray[string]{ARRAY}
+		result.Spec.Items = openapi.NewBoolOrSchemaCompat(false, schema)
 
 		return result, nil
 	case strings.HasPrefix(refType, "map["):
@@ -887,10 +878,10 @@ func parseObjectSchemaV3(parser *Parser, refType string, astFile *ast.File) (*sp
 
 		refType = refType[idx+1:]
 		if refType == INTERFACE || refType == ANY {
-			schema := &spec.Schema{}
-			schema.AdditionalProperties = spec.NewBoolOrSchema(false, spec.NewSchemaSpec())
-			schema.Type = &spec.SingleOrArray[string]{OBJECT}
-			refOrSpec := spec.NewRefOrSpec(nil, schema)
+			schema := &openapi.Schema{}
+			schema.AdditionalProperties = openapi.NewBoolOrSchemaCompat(false, openapi.NewSchemaSpec())
+			schema.Type = &openapi.SingleOrArray[string]{OBJECT}
+			refOrSpec := openapi.NewRefOrSpecCompat(nil, schema)
 			return refOrSpec, nil
 		}
 
@@ -899,10 +890,10 @@ func parseObjectSchemaV3(parser *Parser, refType string, astFile *ast.File) (*sp
 			return nil, err
 		}
 
-		result := &spec.Schema{}
-		result.AdditionalProperties = spec.NewBoolOrSchema(false, schema)
-		result.Type = &spec.SingleOrArray[string]{OBJECT}
-		refOrSpec := spec.NewSchemaSpec()
+		result := &openapi.Schema{}
+		result.AdditionalProperties = openapi.NewBoolOrSchemaCompat(false, schema)
+		result.Type = &openapi.SingleOrArray[string]{OBJECT}
+		refOrSpec := openapi.NewSchemaSpec()
 		refOrSpec.Spec = result
 
 		return refOrSpec, nil
@@ -918,7 +909,7 @@ func parseObjectSchemaV3(parser *Parser, refType string, astFile *ast.File) (*sp
 			return schema, nil
 		}
 
-		return spec.NewSchemaRef(spec.NewRef("#/components/schemas/" + refType)), nil
+		return openapi.NewSchemaRef(openapi.NewRef("#/components/schemas/" + refType)), nil
 	}
 }
 
@@ -975,11 +966,11 @@ func (o *OperationV3) ParseResponseHeaderComment(commentLine string, _ *ast.File
 	return nil
 }
 
-func newHeaderSpecV3(schemaType, description string) *spec.RefOrSpec[spec.Extendable[spec.Header]] {
-	result := spec.NewHeaderSpec()
+func newHeaderSpecV3(schemaType, description string) *openapi.RefOrSpec[openapi.Extendable[openapi.Header]] {
+	result := openapi.NewHeaderSpec()
 	result.Spec.Spec.Description = description
-	result.Spec.Spec.Schema = spec.NewSchemaSpec()
-	result.Spec.Spec.Schema.Spec.Type = &spec.SingleOrArray[string]{schemaType}
+	result.Spec.Spec.Schema = openapi.NewSchemaSpec()
+	result.Spec.Spec.Schema.Spec.Type = &openapi.SingleOrArray[string]{schemaType}
 
 	return result
 }
@@ -1026,7 +1017,7 @@ func (o *OperationV3) ParseResponseComment(commentLine string, astFile *ast.File
 			}
 		}
 
-		response := spec.NewResponseSpec()
+		response := openapi.NewResponseSpec()
 		response.Spec.Spec.Description = description
 
 		// Use per-response content type if specified, otherwise fall back to @Produce or default
@@ -1049,12 +1040,12 @@ func (o *OperationV3) ParseResponseComment(commentLine string, astFile *ast.File
 }
 
 // setResponseSchema sets response schema for given response.
-func setResponseSchema(response *spec.Response, mimeType string, schema *spec.RefOrSpec[spec.Schema]) {
-	mediaType := spec.NewMediaType()
+func setResponseSchema(response *openapi.Response, mimeType string, schema *openapi.RefOrSpec[openapi.Schema]) {
+	mediaType := openapi.NewMediaType()
 	mediaType.Spec.Schema = schema
 
 	if response.Content == nil {
-		response.Content = make(map[string]*spec.Extendable[spec.MediaType])
+		response.Content = make(map[string]*openapi.Extendable[openapi.MediaType])
 	}
 
 	response.Content[mimeType] = mediaType
@@ -1089,17 +1080,17 @@ func (o *OperationV3) ParseEmptyResponseComment(commentLine string) error {
 // If the code is already exist, it will merge with the old one:
 // 1. The description will be replaced by the new one if the new one is not empty.
 // 2. The content schema will be merged using `oneOf` if the new one is not empty.
-func (o *OperationV3) AddResponse(code string, response *spec.RefOrSpec[spec.Extendable[spec.Response]]) {
+func (o *OperationV3) AddResponse(code string, response *openapi.RefOrSpec[openapi.Extendable[openapi.Response]]) {
 	if response.Spec.Spec.Headers == nil {
-		response.Spec.Spec.Headers = make(map[string]*spec.RefOrSpec[spec.Extendable[spec.Header]])
+		response.Spec.Spec.Headers = make(map[string]*openapi.RefOrSpec[openapi.Extendable[openapi.Header]])
 	}
 
 	if o.Responses.Spec.Response == nil {
-		o.Responses.Spec.Response = make(map[string]*spec.RefOrSpec[spec.Extendable[spec.Response]])
+		o.Responses.Spec.Response = make(map[string]*openapi.RefOrSpec[openapi.Extendable[openapi.Response]])
 	}
 
 	res := response
-	var prev *spec.RefOrSpec[spec.Extendable[spec.Response]]
+	var prev *openapi.RefOrSpec[openapi.Extendable[openapi.Response]]
 	if code != "" {
 		prev = o.Responses.Spec.Response[code]
 	} else {
@@ -1131,15 +1122,15 @@ func (o *OperationV3) AddResponse(code string, response *spec.RefOrSpec[spec.Ext
 				}
 				if len(newMediaType.Spec.Examples) > 0 {
 					if prevMediaType.Spec.Examples == nil {
-						prevMediaType.Spec.Examples = make(map[string]*spec.RefOrSpec[spec.Extendable[spec.Example]])
+						prevMediaType.Spec.Examples = make(map[string]*openapi.RefOrSpec[openapi.Extendable[openapi.Example]])
 					}
 					for k, v := range newMediaType.Spec.Examples {
 						prevMediaType.Spec.Examples[k] = v
 					}
 				}
 				if prevSchema := prevMediaType.Spec.Schema; prevSchema.Ref != nil || prevSchema.Spec.OneOf == nil {
-					oneOfSchema := spec.NewSchemaSpec()
-					oneOfSchema.Spec.OneOf = []*spec.RefOrSpec[spec.Schema]{prevSchema, newMediaType.Spec.Schema}
+					oneOfSchema := openapi.NewSchemaSpec()
+					oneOfSchema.Spec.OneOf = []*openapi.RefOrSpec[openapi.Schema]{prevSchema, newMediaType.Spec.Schema}
 					prevMediaType.Spec.Schema = oneOfSchema
 				} else {
 					prevSchema.Spec.OneOf = append(prevSchema.Spec.OneOf, newMediaType.Spec.Schema)
@@ -1175,13 +1166,13 @@ func (o *OperationV3) ParseEmptyResponseOnly(commentLine string) error {
 	return nil
 }
 
-func newResponseWithDescription(description string) *spec.RefOrSpec[spec.Extendable[spec.Response]] {
-	response := spec.NewResponseSpec()
+func newResponseWithDescription(description string) *openapi.RefOrSpec[openapi.Extendable[openapi.Response]] {
+	response := openapi.NewResponseSpec()
 	response.Spec.Spec.Description = description
 	return response
 }
 
-func parseCombinedObjectSchemaV3(parser *Parser, refType string, astFile *ast.File) (*spec.RefOrSpec[spec.Schema], error) {
+func parseCombinedObjectSchemaV3(parser *Parser, refType string, astFile *ast.File) (*openapi.RefOrSpec[openapi.Schema], error) {
 	matches := combinedPattern.FindStringSubmatch(refType)
 	if len(matches) != 3 {
 		return nil, fmt.Errorf("invalid type: %s", refType)
@@ -1192,7 +1183,7 @@ func parseCombinedObjectSchemaV3(parser *Parser, refType string, astFile *ast.Fi
 		return nil, err
 	}
 
-	fields, props := parseFields(matches[2]), map[string]*spec.RefOrSpec[spec.Schema]{}
+	fields, props := parseFields(matches[2]), map[string]*openapi.RefOrSpec[openapi.Schema]{}
 
 	for _, field := range fields {
 		keyVal := strings.SplitN(field, "=", 2)
@@ -1223,22 +1214,22 @@ func parseCombinedObjectSchemaV3(parser *Parser, refType string, astFile *ast.Fi
 
 	schemaRefPath := strings.Replace(schema.Ref.Ref, "#/components/schemas/", "", 1)
 	schemaSpec := parser.openAPI.Components.Spec.Schemas[schemaRefPath]
-	schemaSpec.Spec.JsonSchemaComposition.AllOf = make([]*spec.RefOrSpec[spec.Schema], len(props))
+	schemaSpec.Spec.AllOf = make([]*openapi.RefOrSpec[openapi.Schema], len(props))
 
 	i := 0
 	for name, prop := range props {
-		wrapperSpec := spec.NewSchemaSpec()
-		wrapperSpec.Spec = &spec.Schema{}
-		wrapperSpec.Spec.Type = &spec.SingleOrArray[string]{OBJECT}
-		wrapperSpec.Spec.Properties = map[string]*spec.RefOrSpec[spec.Schema]{
+		wrapperSpec := openapi.NewSchemaSpec()
+		wrapperSpec.Spec = &openapi.Schema{}
+		wrapperSpec.Spec.Type = &openapi.SingleOrArray[string]{OBJECT}
+		wrapperSpec.Spec.Properties = map[string]*openapi.RefOrSpec[openapi.Schema]{
 			name: prop,
 		}
 
 		parser.openAPI.Components.Spec.Schemas[name] = wrapperSpec
 
-		ref := spec.NewRefOrSpec[spec.Schema](spec.NewRef("#/components/schemas/"+name), nil)
+		ref := openapi.NewSchemaRef(openapi.NewRef("#/components/schemas/" + name))
 
-		schemaSpec.Spec.JsonSchemaComposition.AllOf[i] = ref
+		schemaSpec.Spec.AllOf[i] = ref
 		i++
 	}
 
@@ -1378,8 +1369,8 @@ func (o *OperationV3) ProcessDiscriminatorComment() error {
 	return nil
 }
 
-func buildDiscriminator(info *parsedDiscriminator) *spec.Discriminator {
-	d := spec.NewDiscriminator()
+func buildDiscriminator(info *parsedDiscriminator) *openapi.Discriminator {
+	d := openapi.NewDiscriminator()
 	d.PropertyName = info.propertyName
 	if len(info.mapping) > 0 {
 		d.Mapping = info.mapping
@@ -1387,7 +1378,7 @@ func buildDiscriminator(info *parsedDiscriminator) *spec.Discriminator {
 	return d
 }
 
-func applyDiscriminatorToContent(content map[string]*spec.Extendable[spec.MediaType], d *spec.Discriminator) {
+func applyDiscriminatorToContent(content map[string]*openapi.Extendable[openapi.MediaType], d *openapi.Discriminator) {
 	for _, mediaType := range content {
 		if mediaType == nil || mediaType.Spec.Schema == nil {
 			continue

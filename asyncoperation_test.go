@@ -4,7 +4,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	openapi "github.com/sv-tools/openapi/spec"
+	openapi "github.com/wbeuil/openapi"
 )
 
 func TestAsyncOperation_ParseComment(t *testing.T) {

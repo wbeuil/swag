@@ -17,7 +17,7 @@ import (
 	"time"
 
 	v2 "github.com/go-openapi/spec"
-	v3 "github.com/sv-tools/openapi/spec"
+	openapi "github.com/wbeuil/openapi"
 
 	"github.com/swaggo/swag/v2"
 	"github.com/swaggo/swag/v2/asyncapi"
@@ -338,7 +338,7 @@ func (g *Gen) writeDoc(config *Config, doc interface{}) error {
 			return err
 
 		}
-	case *v3.OpenAPI:
+	case *openapi.OpenAPI:
 		err = g.writeGoDocV3(packageName, docs, spec, config)
 		if err != nil {
 			return err
@@ -606,7 +606,7 @@ func (g *Gen) writeGoDoc(packageName string, output io.Writer, swagger *v2.Swagg
 	return err
 }
 
-func (g *Gen) writeGoDocV3(packageName string, output io.Writer, openAPI *v3.OpenAPI, config *Config) error {
+func (g *Gen) writeGoDocV3(packageName string, output io.Writer, openAPI *openapi.OpenAPI, config *Config) error {
 	generator, err := template.New("oas3.tmpl").Funcs(template.FuncMap{
 		"printDoc": func(v string) string {
 			// Add schemes
@@ -619,11 +619,11 @@ func (g *Gen) writeGoDocV3(packageName string, output io.Writer, openAPI *v3.Ope
 		return err
 	}
 
-	openAPISpec := v3.OpenAPI{
+	openAPISpec := openapi.OpenAPI{
 		Components: openAPI.Components,
 		OpenAPI:    openAPI.OpenAPI,
-		Info: &v3.Extendable[v3.Info]{
-			Spec: &v3.Info{
+		Info: &openapi.Extendable[openapi.Info]{
+			Spec: &openapi.Info{
 				Description:    config.LeftTemplateDelim + "escape .Description" + config.RightTemplateDelim,
 				Title:          config.LeftTemplateDelim + ".Title" + config.RightTemplateDelim,
 				Version:        config.LeftTemplateDelim + ".Version" + config.RightTemplateDelim,

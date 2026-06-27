@@ -3,13 +3,13 @@ package swag
 import (
 	"errors"
 
-	"github.com/sv-tools/openapi/spec"
+	"github.com/wbeuil/openapi"
 )
 
 // PrimitiveSchemaV3 build a primitive schema.
-func PrimitiveSchemaV3(refType string) *spec.RefOrSpec[spec.Schema] {
-	result := spec.NewSchemaSpec()
-	result.Spec.Type = &spec.SingleOrArray[string]{refType}
+func PrimitiveSchemaV3(refType string) *openapi.RefOrSpec[openapi.Schema] {
+	result := openapi.NewSchemaSpec()
+	result.Spec.Type = &openapi.SingleOrArray[string]{refType}
 
 	return result
 }
@@ -41,12 +41,12 @@ func IsComplexSchemaV3(schema *SchemaV3) bool {
 }
 
 // RefSchemaV3 build a reference schema.
-func RefSchemaV3(refType string) *spec.RefOrSpec[spec.Schema] {
-	return spec.NewRefOrSpec[spec.Schema](spec.NewRef("#/components/schemas/"+refType), nil)
+func RefSchemaV3(refType string) *openapi.RefOrSpec[openapi.Schema] {
+	return openapi.NewSchemaRef(openapi.NewRef("#/components/schemas/" + refType))
 }
 
 // BuildCustomSchemaV3 build custom schema specified by tag swaggertype.
-func BuildCustomSchemaV3(types []string) (*spec.RefOrSpec[spec.Schema], error) {
+func BuildCustomSchemaV3(types []string) (*openapi.RefOrSpec[openapi.Schema], error) {
 	if len(types) == 0 {
 		return nil, nil
 	}
@@ -69,9 +69,9 @@ func BuildCustomSchemaV3(types []string) (*spec.RefOrSpec[spec.Schema], error) {
 		}
 
 		// TODO: check if this is correct
-		result := spec.NewSchemaSpec()
-		result.Spec.Type = &spec.SingleOrArray[string]{ARRAY}
-		result.Spec.AdditionalProperties = spec.NewBoolOrSchema(true, schema)
+		result := openapi.NewSchemaSpec()
+		result.Spec.Type = &openapi.SingleOrArray[string]{ARRAY}
+		result.Spec.AdditionalProperties = openapi.NewBoolOrSchemaCompat(true, schema)
 
 		return result, nil
 	case OBJECT:
@@ -84,9 +84,9 @@ func BuildCustomSchemaV3(types []string) (*spec.RefOrSpec[spec.Schema], error) {
 			return nil, err
 		}
 
-		result := spec.NewSchemaSpec()
-		result.Spec.AdditionalProperties = spec.NewBoolOrSchema(true, schema)
-		result.Spec.Type = &spec.SingleOrArray[string]{OBJECT}
+		result := openapi.NewSchemaSpec()
+		result.Spec.AdditionalProperties = openapi.NewBoolOrSchemaCompat(true, schema)
+		result.Spec.Type = &openapi.SingleOrArray[string]{OBJECT}
 
 		return result, nil
 	default:
