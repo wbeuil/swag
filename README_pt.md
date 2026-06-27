@@ -90,8 +90,8 @@ OPÇÕES:
    --dir valor, -d valor Os directórios que deseja analisar, separados por vírgulas e de informação geral devem estar no primeiro (por padrão: "./")
    --exclude valor Excluir directórios e ficheiros ao pesquisar, separados por vírgulas
    -propertyStrategy da estratégia, -p valor da propriedadeEstratégia de nomeação de propriedades como snakecase,camelcase,pascalcase (por padrão: "camelcase")
-   --output de saída, -o valor directório de saída para todos os ficheiros gerados(swagger.json, swagger.yaml e docs.go) (por padrão: "./docs")
-   --outputTypes valor de saídaTypes, -- valor de saída Tipos de ficheiros gerados (docs.go, swagger.json, swagger.yaml) como go,json,yaml (por padrão: "go,json,yaml")
+   --output de saída, -o valor directório de saída para todos os ficheiros gerados(swagger.json, openapi.yaml e docs.go) (por padrão: "./docs")
+   --outputTypes valor de saídaTypes, -- valor de saída Tipos de ficheiros gerados (docs.go, swagger.json, openapi.yaml) como go,json,yaml (por padrão: "go,json,yaml")
    --parseVendor ParseVendor Parse go files na pasta 'vendor', desactivado por padrão (padrão: falso)
    --parseInternal Parse go ficheiros em pacotes internos, desactivados por padrão (padrão: falso)
    --generatedTime Gerar timestamp no topo dos docs.go, desactivado por padrão (padrão: falso)
@@ -911,7 +911,7 @@ type Example struct {
 Por defeito, o comando `swag` gera especificação Swagger em três tipos diferentes de ficheiros/arquivos:
 - docs.go
 - swagger.json
-- swagger.yaml
+- openapi.yaml
 
 Se desejar limitar um conjunto de tipos de ficheiros que devem ser gerados pode utilizar a bandeira `--outputTypes` (short `-ot`). O valor por defeito é `go,json,yaml` - tipos de saída separados por vírgula. Para limitar a saída apenas a ficheiros `go` e `yaml`, escrever-se-ia `go,yaml'. Com comando completo que seria `swag init --outputTypes go,yaml`.
 

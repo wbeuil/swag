@@ -81,13 +81,13 @@ var initFlags = []cli.Flag{
 		Name:    outputFlag,
 		Aliases: []string{"o"},
 		Value:   "./docs",
-		Usage:   "Output directory for all the generated files(swagger.json, swagger.yaml and docs.go)",
+		Usage:   "Output directory for all the generated files(swagger.json, openapi.yaml and docs.go)",
 	},
 	&cli.StringFlag{
 		Name:    outputTypesFlag,
 		Aliases: []string{"ot"},
 		Value:   "go,json,yaml",
-		Usage:   "Output types of generated files (docs.go, swagger.json, swagger.yaml) like go,json,yaml",
+		Usage:   "Output types of generated files (docs.go, swagger.json, openapi.yaml) like go,json,yaml",
 	},
 	&cli.BoolFlag{
 		Name:  parseVendorFlag,
