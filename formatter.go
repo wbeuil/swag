@@ -21,6 +21,8 @@ var specialTagForSplit = map[string]bool{
 	failureAttr:  true,
 	responseAttr: true,
 	headerAttr:   true,
+	// AsyncAPI attributes with multi-field bodies (quoted strings / braces)
+	asyncMessageAttr: true,
 }
 
 var skipChar = map[byte]byte{

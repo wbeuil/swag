@@ -22,6 +22,8 @@ import (
 	"github.com/KyleBanks/depth"
 	"github.com/go-openapi/spec"
 	openapi "github.com/sv-tools/openapi/spec"
+
+	"github.com/swaggo/swag/v2/asyncapi"
 )
 
 const (
@@ -73,6 +75,25 @@ const (
 	scopeAttrPrefix          = "@scope."
 	stateAttr                = "@state"
 	discriminatorAttr        = "@discriminator"
+
+	// AsyncAPI annotations
+	asyncapiAttr              = "@asyncapi"
+	asyncTitleAttr            = "@asynctitle"
+	asyncVersionAttr          = "@asyncversion"
+	asyncDescriptionAttr      = "@asyncdescription"
+	asyncLicenseNameAttr      = "@asynclicense.name"
+	asyncLicenseURLAttr       = "@asynclicense.url"
+	asyncDefaultContentTypeAttr = "@asyncdefaultcontenttype"
+	asyncServerAttr           = "@asyncserver"
+	asyncChannelAttr          = "@asyncchannel"
+	asyncOperationAttr        = "@asyncoperation"
+	asyncActionAttr           = "@asyncaction"
+	asyncMessageAttr          = "@asyncmessage"
+	asyncSummaryAttr          = "@asyncsummary"
+	asyncTagAttr              = "@asynctag"
+	asyncBindingAttr          = "@asyncbinding"
+	asyncExternalDocsDescAttr = "@asyncexternaldocs.description"
+	asyncExternalDocsURLAttr  = "@asyncexternaldocs.url"
 )
 
 // ParseFlag determine what to parse
@@ -205,6 +226,18 @@ type Parser struct {
 
 	// UseStructName Dont use those ugly full-path names when using dependency flag
 	UseStructName bool
+
+	// asyncAPI represents the AsyncAPI 3.1 root document object
+	asyncAPI *asyncapi.AsyncAPI
+
+	// asyncOperations store parsed AsyncAPI operations
+	asyncOperations map[string]*asyncapi.Operation
+
+	// asyncChannels store parsed AsyncAPI channels
+	asyncChannels map[string]*asyncapi.Channel
+
+	// asyncServers store parsed AsyncAPI servers
+	asyncServers map[string]*asyncapi.Server
 }
 
 // FieldParserFactory create FieldParser.
@@ -276,6 +309,10 @@ func New(options ...func(*Parser)) *Parser {
 		fieldParserFactory:   newTagBaseFieldParser,
 		fieldParserFactoryV3: newTagBaseFieldParserV3,
 		Overrides:            make(map[string]string),
+		asyncAPI:             asyncapi.NewAsyncAPI(),
+		asyncOperations:      make(map[string]*asyncapi.Operation),
+		asyncChannels:        make(map[string]*asyncapi.Channel),
+		asyncServers:         make(map[string]*asyncapi.Server),
 	}
 
 	for _, option := range options {
@@ -612,6 +649,12 @@ func (parser *Parser) ParseGeneralAPIInfo(mainAPIFile string) error {
 				return err
 			}
 
+			// Parse AsyncAPI general info from the same comment block
+			err = parser.parseGeneralAsyncAPIInfo(comments)
+			if err != nil {
+				return err
+			}
+
 			continue
 		}
 
@@ -620,6 +663,11 @@ func (parser *Parser) ParseGeneralAPIInfo(mainAPIFile string) error {
 			return err
 		}
 
+		// Parse AsyncAPI general info from the same comment block
+		err = parser.parseGeneralAsyncAPIInfo(comments)
+		if err != nil {
+			return err
+		}
 	}
 
 	return nil
@@ -1188,7 +1236,21 @@ func (parser *Parser) ParseRouterAPIInfo(fileInfo *AstFileInfo) error {
 
 func (parser *Parser) parseRouterAPIInfoComment(comments []*ast.Comment, fileInfo *AstFileInfo) error {
 	if parser.matchTags(comments) && matchExtension(parser.parseExtension, comments) {
-		// for per 'function' comment, create a new 'Operation' object
+		// Detect if this is an AsyncAPI block
+		isAsync := false
+		for _, comment := range comments {
+			commentLine := strings.TrimSpace(strings.TrimLeft(comment.Text, "/"))
+			if strings.HasPrefix(strings.ToLower(commentLine), asyncapiAttr) {
+				isAsync = true
+				break
+			}
+		}
+
+		if isAsync {
+			return parser.parseAsyncAPIInfoComment(comments, fileInfo)
+		}
+
+		// Existing OpenAPI path
 		operation := NewOperation(parser, SetCodeExampleFilesDirectory(parser.codeExampleFilesDir))
 		for _, comment := range comments {
 			err := operation.ParseComment(comment.Text, fileInfo.File)
@@ -1206,6 +1268,88 @@ func (parser *Parser) parseRouterAPIInfoComment(comments []*ast.Comment, fileInf
 	}
 
 	return nil
+}
+
+func (parser *Parser) parseAsyncAPIInfoComment(comments []*ast.Comment, fileInfo *AstFileInfo) error {
+	asyncOp := NewAsyncOperation(parser)
+	for _, comment := range comments {
+		err := asyncOp.ParseComment(comment.Text, fileInfo.File)
+		if err != nil {
+			return fmt.Errorf("AsyncAPI ParseComment error in file %s :%+v", fileInfo.Path, err)
+		}
+	}
+	return processAsyncOperation(parser, asyncOp)
+}
+
+func processAsyncOperation(parser *Parser, asyncOp *AsyncOperation) error {
+	op := asyncOp.Operation
+
+	// Register operation
+	opName := asyncOp.OperationName
+	if opName == "" {
+		opName = generateAsyncOperationID(asyncOp.ChannelName, op.Action)
+	}
+	parser.asyncOperations[opName] = op
+	parser.asyncAPI.Operations[opName] = op
+
+	// Register channel
+	if asyncOp.ChannelName != "" {
+		parser.asyncChannels[asyncOp.ChannelName] = asyncOp.Channel
+		parser.asyncAPI.Channels[asyncOp.ChannelName] = asyncOp.Channel
+
+		// Link operation to channel
+		op.Channel = &asyncapi.Reference{Ref: "#/channels/" + asyncOp.ChannelName}
+	}
+
+	// Register messages and their schemas
+	for _, msg := range asyncOp.Messages {
+		if msg.Name == "" {
+			continue
+		}
+		msgKey := msg.Name
+		parser.asyncAPI.Components.Messages[msgKey] = msg
+
+		// Register schema in components if payload exists
+		if msg.Payload != nil && msg.Payload.Schema != nil {
+			parser.asyncAPI.Components.Schemas[msgKey] = msg.Payload.Schema
+			// Replace embedded schema with $ref
+			msg.Payload.Schema = nil
+			msg.Payload.SchemaFormat = "application/vnd.aai.asyncapi+json;version=3.1.0"
+		}
+
+		// Link channel to messages
+		if asyncOp.Channel.Messages == nil {
+			asyncOp.Channel.Messages = make(map[string]*asyncapi.Message)
+		}
+		asyncOp.Channel.Messages[msgKey] = &asyncapi.Message{
+			Ref: "#/components/messages/" + msgKey,
+		}
+
+		// Link operation to messages
+		op.Messages = append(op.Messages, &asyncapi.Message{
+			Ref: "#/channels/" + asyncOp.ChannelName + "/messages/" + msgKey,
+		})
+	}
+
+	// Apply tags
+	if len(asyncOp.Tags) > 0 {
+		op.Tags = append(op.Tags, asyncOp.Tags...)
+	}
+
+	// Register server
+	if asyncOp.Server != nil && asyncOp.ServerName != "" {
+		parser.asyncServers[asyncOp.ServerName] = asyncOp.Server
+		parser.asyncAPI.Servers[asyncOp.ServerName] = asyncOp.Server
+	}
+
+	return nil
+}
+
+func generateAsyncOperationID(channelName, action string) string {
+	if channelName == "" {
+		return action + "Operation"
+	}
+	return action + strings.Title(channelName)
 }
 
 func refRouteMethodOp(item *spec.PathItem, method string) (op **spec.Operation) {
@@ -2044,6 +2188,11 @@ func walkWith(excludes map[string]struct{}, parseVendor bool) func(path string, 
 // GetSwagger returns *spec.Swagger which is the root document object for the API specification.
 func (parser *Parser) GetSwagger() *spec.Swagger {
 	return parser.swagger
+}
+
+// GetAsyncAPI returns *asyncapi.AsyncAPI which is the root document object for the AsyncAPI specification.
+func (parser *Parser) GetAsyncAPI() *asyncapi.AsyncAPI {
+	return parser.asyncAPI
 }
 
 // addTestType just for tests.

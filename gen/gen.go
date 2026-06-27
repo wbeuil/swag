@@ -20,6 +20,7 @@ import (
 	v3 "github.com/sv-tools/openapi/spec"
 
 	"github.com/swaggo/swag/v2"
+	"github.com/swaggo/swag/v2/asyncapi"
 	"golang.org/x/text/cases"
 	"golang.org/x/text/language"
 	"sigs.k8s.io/yaml"
@@ -34,11 +35,12 @@ type genTypeWriter func(*Config, interface{}) error
 
 // Gen presents a generate tool for swag.
 type Gen struct {
-	json          func(data interface{}) ([]byte, error)
-	jsonIndent    func(data interface{}) ([]byte, error)
-	jsonToYAML    func(data []byte) ([]byte, error)
-	outputTypeMap map[string]genTypeWriter
-	debug         Debugger
+	json             func(data interface{}) ([]byte, error)
+	jsonIndent       func(data interface{}) ([]byte, error)
+	jsonToYAML       func(data []byte) ([]byte, error)
+	outputTypeMap    map[string]genTypeWriter
+	asyncOutputTypeMap map[string]genTypeWriter
+	debug            Debugger
 }
 
 //go:embed src/*.tmpl
@@ -65,6 +67,12 @@ func New() *Gen {
 		"json": gen.writeJSON,
 		"yaml": gen.writeYAML,
 		"yml":  gen.writeYAML,
+	}
+
+	gen.asyncOutputTypeMap = map[string]genTypeWriter{
+		"json": gen.writeAsyncJSON,
+		"yaml": gen.writeAsyncYAML,
+		"yml":  gen.writeAsyncYAML,
 	}
 
 	return &gen
@@ -161,6 +169,12 @@ type Config struct {
 
 	// UseStructNames stick to the struct name instead of those ugly full-path names
 	UseStructNames bool
+
+	// GenerateAsyncAPIDoc if true, AsyncAPI 3.1 spec will be generated
+	GenerateAsyncAPIDoc bool
+
+	// AsyncOutputTypes define types of files which should be generated for AsyncAPI
+	AsyncOutputTypes []string
 }
 
 // Build builds swagger json file  for given searchDir and mainAPIFile. Returns json.
@@ -241,10 +255,32 @@ func (g *Gen) Build(config *Config) error {
 	}
 
 	if config.GenerateOpenAPI3Doc {
-		return g.writeOpenAPI(config, p.GetOpenAPI())
+		if err := g.writeOpenAPI(config, p.GetOpenAPI()); err != nil {
+			return err
+		}
+	} else {
+		if err := g.writeOpenAPI(config, p.GetSwagger()); err != nil {
+			return err
+		}
 	}
 
-	return g.writeOpenAPI(config, p.GetSwagger())
+	if config.GenerateAsyncAPIDoc {
+		asyncAPI := p.GetAsyncAPI()
+		if asyncAPI != nil && len(asyncAPI.Operations) > 0 {
+			for _, outputType := range config.AsyncOutputTypes {
+				outputType = strings.ToLower(strings.TrimSpace(outputType))
+				if typeWriter, ok := g.asyncOutputTypeMap[outputType]; ok {
+					if err := typeWriter(config, asyncAPI); err != nil {
+						return err
+					}
+				} else {
+					log.Printf("async output type '%s' not supported", outputType)
+				}
+			}
+		}
+	}
+
+	return nil
 }
 
 func (g *Gen) writeOpenAPI(config *Config, doc interface{}) error {
@@ -372,6 +408,35 @@ func (g *Gen) writeYAML(config *Config, swagger interface{}) error {
 	g.debug.Printf("create swagger.yaml at %+v", yamlFileName)
 
 	return nil
+}
+
+func (g *Gen) writeAsyncJSON(config *Config, spec interface{}) error {
+	asyncAPI := spec.(*asyncapi.AsyncAPI)
+	b, err := g.jsonIndent(asyncAPI)
+	if err != nil {
+		return err
+	}
+
+	asyncFileName := path.Join(config.OutputDir, "asyncapi.json")
+
+	return g.writeFile(b, asyncFileName)
+}
+
+func (g *Gen) writeAsyncYAML(config *Config, spec interface{}) error {
+	asyncAPI := spec.(*asyncapi.AsyncAPI)
+	b, err := g.json(asyncAPI)
+	if err != nil {
+		return err
+	}
+
+	y, err := g.jsonToYAML(b)
+	if err != nil {
+		return err
+	}
+
+	asyncFileName := path.Join(config.OutputDir, "asyncapi.yaml")
+
+	return g.writeFile(y, asyncFileName)
 }
 
 func (g *Gen) writeFile(b []byte, file string) error {
