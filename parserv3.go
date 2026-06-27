@@ -538,6 +538,20 @@ func (p *Parser) ParseRouterAPIInfoV3(fileInfo *AstFileInfo) error {
 
 		if p.matchTags(astDeclaration.Doc.List) &&
 			matchExtension(p.parseExtension, astDeclaration.Doc.List) {
+			// Detect if this is an AsyncAPI block
+			isAsync := false
+			for _, comment := range astDeclaration.Doc.List {
+				commentLine := strings.TrimSpace(strings.TrimLeft(comment.Text, "/"))
+				if strings.HasPrefix(strings.ToLower(commentLine), asyncapiAttr) {
+					isAsync = true
+					break
+				}
+			}
+
+			if isAsync {
+				return p.parseAsyncAPIInfoComment(astDeclaration.Doc.List, fileInfo)
+			}
+
 			// for per 'function' comment, create a new 'Operation' object
 			operation := NewOperationV3(p, SetCodeExampleFilesDirectoryV3(p.codeExampleFilesDir))
 
