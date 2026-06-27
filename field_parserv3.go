@@ -7,7 +7,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/sv-tools/openapi/spec"
+	"github.com/wbeuil/openapi"
 )
 
 type structFieldV3 struct {
@@ -114,7 +114,7 @@ func newTagBaseFieldParserV3(p *Parser, file *ast.File, field *ast.Field) FieldP
 	return &fieldParser
 }
 
-func (ps *tagBaseFieldParserV3) CustomSchema() (*spec.RefOrSpec[spec.Schema], error) {
+func (ps *tagBaseFieldParserV3) CustomSchema() (*openapi.RefOrSpec[openapi.Schema], error) {
 	if ps.field.Tag == nil {
 		return nil, nil
 	}
@@ -128,14 +128,14 @@ func (ps *tagBaseFieldParserV3) CustomSchema() (*spec.RefOrSpec[spec.Schema], er
 }
 
 // ComplementSchema complement schema with field properties
-func (ps *tagBaseFieldParserV3) ComplementSchema(schema *spec.RefOrSpec[spec.Schema]) error {
+func (ps *tagBaseFieldParserV3) ComplementSchema(schema *openapi.RefOrSpec[openapi.Schema]) error {
 	types := ps.p.GetSchemaTypePathV3(schema, 2)
 	if len(types) == 0 {
 		return fmt.Errorf("invalid type for field: %s", ps.field.Names[0])
 	}
 
 	if schema.Ref != nil { //IsRefSchema(schema)
-		var newSchema = spec.Schema{}
+		var newSchema = openapi.Schema{}
 		err := ps.complementSchema(&newSchema, types, ps.p.getSchemaByRef(schema.Ref))
 		if err != nil {
 			return err
@@ -145,7 +145,7 @@ func (ps *tagBaseFieldParserV3) ComplementSchema(schema *spec.RefOrSpec[spec.Sch
 				newSchema.Extensions = make(map[string]any)
 			}
 			newSchema.Extensions["$ref"] = schema.Ref.Ref
-			*schema = spec.RefOrSpec[spec.Schema]{Spec: &newSchema}
+			*schema = openapi.RefOrSpec[openapi.Schema]{Spec: &newSchema}
 		}
 		return nil
 	}
@@ -154,7 +154,7 @@ func (ps *tagBaseFieldParserV3) ComplementSchema(schema *spec.RefOrSpec[spec.Sch
 }
 
 // complementSchema complement schema with field properties
-func (ps *tagBaseFieldParserV3) complementSchema(schema *spec.Schema, types []string, refSchema *spec.Schema) error {
+func (ps *tagBaseFieldParserV3) complementSchema(schema *openapi.Schema, types []string, refSchema *openapi.Schema) error {
 	if ps.field.Tag == nil {
 		if ps.field.Doc != nil {
 			schema.Description = strings.TrimSpace(ps.field.Doc.Text())
@@ -357,7 +357,7 @@ func (ps *tagBaseFieldParserV3) complementSchema(schema *spec.Schema, types []st
 		}
 	}
 
-	var oneOfSchemas []*spec.RefOrSpec[spec.Schema]
+	var oneOfSchemas []*openapi.RefOrSpec[openapi.Schema]
 	oneOfTagValue := ps.tag.Get(oneOfTag)
 	if oneOfTagValue != "" {
 		oneOfTypes := strings.Split((oneOfTagValue), ",")
@@ -372,7 +372,7 @@ func (ps *tagBaseFieldParserV3) complementSchema(schema *spec.Schema, types []st
 
 	elemSchema := schema
 	elemRefSchema := refSchema
-	var itemRef *spec.Ref
+	var itemRef *openapi.Ref
 
 	// Always apply defaultValue to the element schema
 	elemSchema.Default = field.defaultValue
@@ -385,7 +385,7 @@ func (ps *tagBaseFieldParserV3) complementSchema(schema *spec.Schema, types []st
 
 		if schema.Items.Schema.Ref != nil {
 			itemRef = schema.Items.Schema.Ref
-			elemSchema = &spec.Schema{}
+			elemSchema = &openapi.Schema{}
 			elemRefSchema = ps.p.getSchemaByRef(itemRef)
 		} else {
 			elemSchema = schema.Items.Schema.Spec
@@ -395,9 +395,9 @@ func (ps *tagBaseFieldParserV3) complementSchema(schema *spec.Schema, types []st
 		elemSchema.Format = field.formatType
 	}
 
-	elemSchema.Maximum = field.maximum
-	elemSchema.Minimum = field.minimum
-	elemSchema.MultipleOf = field.multipleOf
+	elemSchema.Maximum = intPtrToFloat64Ptr(field.maximum)
+	elemSchema.Minimum = intPtrToFloat64Ptr(field.minimum)
+	elemSchema.MultipleOf = intPtrToFloat64Ptr(field.multipleOf)
 	elemSchema.MaxLength = field.maxLength
 	elemSchema.MinLength = field.minLength
 	if shouldApplyFieldEnumConstraint(field.enums, elemRefSchema) {
@@ -411,13 +411,13 @@ func (ps *tagBaseFieldParserV3) complementSchema(schema *spec.Schema, types []st
 			elemSchema.Extensions = make(map[string]any)
 		}
 		elemSchema.Extensions["$ref"] = itemRef.Ref
-		schema.Items.Schema = spec.NewRefOrSpec[spec.Schema](nil, elemSchema)
+		schema.Items.Schema = openapi.NewRefOrSpec[openapi.Schema](elemSchema)
 	}
 
 	return nil
 }
 
-func shouldApplyFieldEnumConstraint(fieldEnums []interface{}, refSchema *spec.Schema) bool {
+func shouldApplyFieldEnumConstraint(fieldEnums []interface{}, refSchema *openapi.Schema) bool {
 	if len(fieldEnums) == 0 {
 		return false
 	}
@@ -449,6 +449,14 @@ func shouldApplyFieldEnumConstraint(fieldEnums []interface{}, refSchema *spec.Sc
 	}
 
 	return false
+}
+
+func intPtrToFloat64Ptr(v *int) *float64 {
+	if v == nil {
+		return nil
+	}
+	f := float64(*v)
+	return &f
 }
 
 func getIntTagV3(structTag reflect.StructTag, tagName string) (*int, error) {

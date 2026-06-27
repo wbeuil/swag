@@ -9,7 +9,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"github.com/sv-tools/openapi/spec"
+	"github.com/wbeuil/openapi"
 )
 
 func TestOverridesGetTypeSchemaV3(t *testing.T) {
@@ -509,9 +509,9 @@ func TestParseSimpleApiV3(t *testing.T) {
 		assert.Equal(t, "Return Cat or Dog", response.Spec.Spec.Description)
 		mediaType := response.Spec.Spec.Content["application/json"]
 		rootSchema := mediaType.Spec.Schema.Spec
-		assert.Equal(t, []*spec.RefOrSpec[spec.Schema]{
-			{Ref: &spec.Ref{Ref: "#/components/schemas/web.Cat"}},
-			{Ref: &spec.Ref{Ref: "#/components/schemas/web.Dog"}},
+		assert.Equal(t, []*openapi.RefOrSpec[openapi.Schema]{
+			{Ref: &openapi.Ref{Ref: "#/components/schemas/web.Cat"}},
+			{Ref: &openapi.Ref{Ref: "#/components/schemas/web.Dog"}},
 		}, rootSchema.OneOf)
 
 	})
@@ -696,14 +696,14 @@ func TestGetSchemaByRef(t *testing.T) {
 	t.Parallel()
 
 	p := New(GenerateOpenAPI3Doc(true))
-	p.openAPI.Components.Spec.Schemas = make(map[string]*spec.RefOrSpec[spec.Schema])
+	p.openAPI.Components.Spec.Schemas = make(map[string]*openapi.RefOrSpec[openapi.Schema])
 
 	t.Run("Existing schema", func(t *testing.T) {
-		testSchema := &spec.Schema{}
-		testSchema.Type = &spec.SingleOrArray[string]{"string"}
-		p.openAPI.Components.Spec.Schemas["TestSchema"] = spec.NewRefOrSpec(nil, testSchema)
+		testSchema := &openapi.Schema{}
+		testSchema.Type = &openapi.SingleOrArray[string]{"string"}
+		p.openAPI.Components.Spec.Schemas["TestSchema"] = openapi.NewRefOrSpecCompat(nil, testSchema)
 
-		ref := &spec.Ref{Ref: "#/components/schemas/TestSchema"}
+		ref := &openapi.Ref{Ref: "#/components/schemas/TestSchema"}
 		result := p.getSchemaByRef(ref)
 
 		require.NotNil(t, result)
@@ -711,10 +711,10 @@ func TestGetSchemaByRef(t *testing.T) {
 	})
 
 	t.Run("Non-existing schema returns empty schema", func(t *testing.T) {
-		ref := &spec.Ref{Ref: "#/components/schemas/NonExistentSchema"}
+		ref := &openapi.Ref{Ref: "#/components/schemas/NonExistentSchema"}
 		result := p.getSchemaByRef(ref)
 
 		require.NotNil(t, result)
-		assert.Equal(t, &spec.Schema{}, result)
+		assert.Equal(t, &openapi.Schema{}, result)
 	})
 }

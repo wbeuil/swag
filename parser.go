@@ -21,7 +21,7 @@ import (
 
 	"github.com/KyleBanks/depth"
 	"github.com/go-openapi/spec"
-	openapi "github.com/sv-tools/openapi/spec"
+	openapi "github.com/wbeuil/openapi"
 
 	"github.com/swaggo/swag/v2/asyncapi"
 )
@@ -294,7 +294,7 @@ func New(options ...func(*Parser)) *Parser {
 		},
 		openAPI: &openapi.OpenAPI{
 			Info:         openapi.NewInfo(),
-			OpenAPI:      "3.1.1",
+			OpenAPI:      "3.2.0",
 			Components:   openapi.NewComponents(),
 			ExternalDocs: openapi.NewExternalDocs(),
 			Paths:        openapi.NewPaths(),
@@ -1112,7 +1112,7 @@ func isExistsScope(scope string) (bool, error) {
 	for _, v := range s {
 		if strings.HasPrefix(v, scopeAttrPrefix) {
 			if strings.Contains(v, ",") {
-				return false, fmt.Errorf("@scope can't use comma(,) get=" + v)
+				return false, fmt.Errorf("@scope can't use comma(,) get=%s", v)
 			}
 		}
 	}

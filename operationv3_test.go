@@ -8,16 +8,16 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"github.com/sv-tools/openapi/spec"
+	"github.com/wbeuil/openapi"
 )
 
-var typeObject = spec.SingleOrArray[string](spec.SingleOrArray[string]{OBJECT})
-var typeArray = spec.SingleOrArray[string](spec.SingleOrArray[string]{ARRAY})
-var typeInteger = spec.SingleOrArray[string](spec.SingleOrArray[string]{INTEGER})
-var typeString = spec.SingleOrArray[string](spec.SingleOrArray[string]{STRING})
-var typeFile = spec.SingleOrArray[string](spec.SingleOrArray[string]{"file"})
-var typeNumber = spec.SingleOrArray[string](spec.SingleOrArray[string]{NUMBER})
-var typeBool = spec.SingleOrArray[string](spec.SingleOrArray[string]{BOOLEAN})
+var typeObject = openapi.SingleOrArray[string](openapi.SingleOrArray[string]{OBJECT})
+var typeArray = openapi.SingleOrArray[string](openapi.SingleOrArray[string]{ARRAY})
+var typeInteger = openapi.SingleOrArray[string](openapi.SingleOrArray[string]{INTEGER})
+var typeString = openapi.SingleOrArray[string](openapi.SingleOrArray[string]{STRING})
+var typeFile = openapi.SingleOrArray[string](openapi.SingleOrArray[string]{"file"})
+var typeNumber = openapi.SingleOrArray[string](openapi.SingleOrArray[string]{NUMBER})
+var typeBool = openapi.SingleOrArray[string](openapi.SingleOrArray[string]{BOOLEAN})
 
 func TestParseEmptyCommentV3(t *testing.T) {
 	t.Parallel()
@@ -982,27 +982,23 @@ func TestOperation_ParseParamCommentV3(t *testing.T) {
 
 				assert.NoError(t, err)
 
-				expected := &spec.RefOrSpec[spec.Extendable[spec.Parameter]]{
-					Spec: &spec.Extendable[spec.Parameter]{
-						Spec: &spec.Parameter{
+				expected := &openapi.RefOrSpec[openapi.Extendable[openapi.Parameter]]{
+					Spec: &openapi.Extendable[openapi.Parameter]{
+						Spec: &openapi.Parameter{
 							Name:        "some_id",
 							Description: "Some ID",
 							In:          paramType,
 							Required:    true,
-							Schema: &spec.RefOrSpec[spec.Schema]{
-								Spec: &spec.Schema{
-									JsonSchema: spec.JsonSchema{
-										JsonSchemaCore: spec.JsonSchemaCore{
-											Type: &typeInteger,
-										},
-									},
+							Schema: &openapi.RefOrSpec[openapi.Schema]{
+								Spec: &openapi.Schema{
+									Type: &typeInteger,
 								},
 							},
 						},
 					},
 				}
 
-				expectedArray := []*spec.RefOrSpec[spec.Extendable[spec.Parameter]]{expected}
+				expectedArray := []*openapi.RefOrSpec[openapi.Extendable[openapi.Parameter]]{expected}
 				assert.Equal(t, o.Parameters, expectedArray)
 			})
 		}
@@ -1016,27 +1012,23 @@ func TestOperation_ParseParamCommentV3(t *testing.T) {
 				err := o.ParseComment(`@Param some_string `+paramType+` string true "Some String"`, nil)
 
 				assert.NoError(t, err)
-				expected := &spec.RefOrSpec[spec.Extendable[spec.Parameter]]{
-					Spec: &spec.Extendable[spec.Parameter]{
-						Spec: &spec.Parameter{
+				expected := &openapi.RefOrSpec[openapi.Extendable[openapi.Parameter]]{
+					Spec: &openapi.Extendable[openapi.Parameter]{
+						Spec: &openapi.Parameter{
 							Description: "Some String",
 							Name:        "some_string",
 							In:          paramType,
 							Required:    true,
-							Schema: &spec.RefOrSpec[spec.Schema]{
-								Spec: &spec.Schema{
-									JsonSchema: spec.JsonSchema{
-										JsonSchemaCore: spec.JsonSchemaCore{
-											Type: &typeString,
-										},
-									},
+							Schema: &openapi.RefOrSpec[openapi.Schema]{
+								Spec: &openapi.Schema{
+									Type: &typeString,
 								},
 							},
 						},
 					},
 				}
 
-				expectedArray := []*spec.RefOrSpec[spec.Extendable[spec.Parameter]]{expected}
+				expectedArray := []*openapi.RefOrSpec[openapi.Extendable[openapi.Parameter]]{expected}
 				assert.Equal(t, o.Parameters, expectedArray)
 			})
 		}
@@ -1118,35 +1110,27 @@ func TestOperation_ParseParamCommentV3(t *testing.T) {
 
 		assert.NoError(t, err)
 
-		expectedT := &spec.RefOrSpec[spec.Extendable[spec.Parameter]]{
-			Spec: &spec.Extendable[spec.Parameter]{
-				Spec: &spec.Parameter{
+		expectedT := &openapi.RefOrSpec[openapi.Extendable[openapi.Parameter]]{
+			Spec: &openapi.Extendable[openapi.Parameter]{
+				Spec: &openapi.Parameter{
 					Name: "t",
 					In:   "query",
-					Schema: &spec.RefOrSpec[spec.Schema]{
-						Spec: &spec.Schema{
-							JsonSchema: spec.JsonSchema{
-								JsonSchemaCore: spec.JsonSchemaCore{
-									Type: &typeString,
-								},
-							},
+					Schema: &openapi.RefOrSpec[openapi.Schema]{
+						Spec: &openapi.Schema{
+							Type: &typeString,
 						},
 					},
 				},
 			},
 		}
-		expectedT2 := &spec.RefOrSpec[spec.Extendable[spec.Parameter]]{
-			Spec: &spec.Extendable[spec.Parameter]{
-				Spec: &spec.Parameter{
+		expectedT2 := &openapi.RefOrSpec[openapi.Extendable[openapi.Parameter]]{
+			Spec: &openapi.Extendable[openapi.Parameter]{
+				Spec: &openapi.Parameter{
 					Name: "t2",
 					In:   "query",
-					Schema: &spec.RefOrSpec[spec.Schema]{
-						Spec: &spec.Schema{
-							JsonSchema: spec.JsonSchema{
-								JsonSchemaCore: spec.JsonSchemaCore{
-									Type: &typeString,
-								},
-							},
+					Schema: &openapi.RefOrSpec[openapi.Schema]{
+						Spec: &openapi.Schema{
+							Type: &typeString,
 						},
 					},
 				},
@@ -1208,35 +1192,27 @@ func TestOperation_ParseParamCommentV3(t *testing.T) {
 
 		assert.NoError(t, err)
 
-		expectedT := &spec.RefOrSpec[spec.Extendable[spec.Parameter]]{
-			Spec: &spec.Extendable[spec.Parameter]{
-				Spec: &spec.Parameter{
+		expectedT := &openapi.RefOrSpec[openapi.Extendable[openapi.Parameter]]{
+			Spec: &openapi.Extendable[openapi.Parameter]{
+				Spec: &openapi.Parameter{
 					Name: "t",
 					In:   "header",
-					Schema: &spec.RefOrSpec[spec.Schema]{
-						Spec: &spec.Schema{
-							JsonSchema: spec.JsonSchema{
-								JsonSchemaCore: spec.JsonSchemaCore{
-									Type: &typeString,
-								},
-							},
+					Schema: &openapi.RefOrSpec[openapi.Schema]{
+						Spec: &openapi.Schema{
+							Type: &typeString,
 						},
 					},
 				},
 			},
 		}
-		expectedT2 := &spec.RefOrSpec[spec.Extendable[spec.Parameter]]{
-			Spec: &spec.Extendable[spec.Parameter]{
-				Spec: &spec.Parameter{
+		expectedT2 := &openapi.RefOrSpec[openapi.Extendable[openapi.Parameter]]{
+			Spec: &openapi.Extendable[openapi.Parameter]{
+				Spec: &openapi.Parameter{
 					Name: "t2",
 					In:   "header",
-					Schema: &spec.RefOrSpec[spec.Schema]{
-						Spec: &spec.Schema{
-							JsonSchema: spec.JsonSchema{
-								JsonSchemaCore: spec.JsonSchemaCore{
-									Type: &typeString,
-								},
-							},
+					Schema: &openapi.RefOrSpec[openapi.Schema]{
+						Spec: &openapi.Schema{
+							Type: &typeString,
 						},
 					},
 				},
@@ -1783,7 +1759,7 @@ func TestParseParamCommentByMinimumV3(t *testing.T) {
 	assert.True(t, parameterSpec.Required)
 	assert.Equal(t, "query", parameterSpec.In)
 	assert.Equal(t, &typeInteger, parameterSpec.Schema.Spec.Type)
-	assert.Equal(t, 10, *parameterSpec.Schema.Spec.Minimum)
+	assert.Equal(t, float64(10), *parameterSpec.Schema.Spec.Minimum)
 
 	comment = `@Param some_id query int true "Some ID" Mininum(10)`
 	assert.NoError(t, operation.ParseComment(comment, nil))
@@ -1814,7 +1790,7 @@ func TestParseParamCommentByMaximumV3(t *testing.T) {
 	assert.True(t, parameterSpec.Required)
 	assert.Equal(t, "query", parameterSpec.In)
 	assert.Equal(t, &typeInteger, parameterSpec.Schema.Spec.Type)
-	assert.Equal(t, 10, *parameterSpec.Schema.Spec.Maximum)
+	assert.Equal(t, float64(10), *parameterSpec.Schema.Spec.Maximum)
 
 	comment = `@Param some_id query int true "Some ID" Maxinum(10)`
 	assert.NoError(t, operation.ParseComment(comment, nil))
@@ -1914,7 +1890,7 @@ func TestParseParamCommentBySchemaExampleStringV3(t *testing.T) {
 
 func TestParseParamCommentBySchemaExampleUnsupportedTypeV3(t *testing.T) {
 	t.Parallel()
-	var param spec.Parameter
+	var param openapi.Parameter
 
 	setSchemaExampleV3(nil, "something", "random value")
 	assert.Nil(t, param.Schema)
@@ -1922,7 +1898,7 @@ func TestParseParamCommentBySchemaExampleUnsupportedTypeV3(t *testing.T) {
 	setSchemaExampleV3(nil, STRING, "string value")
 	assert.Nil(t, param.Schema)
 
-	param.Schema = spec.NewSchemaSpec()
+	param.Schema = openapi.NewSchemaSpec()
 	setSchemaExampleV3(param.Schema.Spec, STRING, "string value")
 	assert.Equal(t, "string value", param.Schema.Spec.Example)
 
@@ -1967,8 +1943,8 @@ func TestParseAndExtractionParamAttributeV3(t *testing.T) {
 	op := NewOperationV3(New())
 
 	t.Run("number", func(t *testing.T) {
-		numberParam := spec.Parameter{
-			Schema: spec.NewSchemaSpec(),
+		numberParam := openapi.Parameter{
+			Schema: openapi.NewSchemaSpec(),
 		}
 		err := op.parseParamAttribute(
 			" default(1) maximum(100) minimum(0) format(csv)",
@@ -1977,8 +1953,8 @@ func TestParseAndExtractionParamAttributeV3(t *testing.T) {
 			&numberParam,
 		)
 		assert.NoError(t, err)
-		assert.Equal(t, int(0), *numberParam.Schema.Spec.Minimum)
-		assert.Equal(t, int(100), *numberParam.Schema.Spec.Maximum)
+		assert.Equal(t, float64(0), *numberParam.Schema.Spec.Minimum)
+		assert.Equal(t, float64(100), *numberParam.Schema.Spec.Maximum)
 		assert.Equal(t, "csv", numberParam.Schema.Spec.Format)
 		assert.Equal(t, float64(1), numberParam.Schema.Spec.Default)
 
@@ -1990,8 +1966,8 @@ func TestParseAndExtractionParamAttributeV3(t *testing.T) {
 	})
 
 	t.Run("string", func(t *testing.T) {
-		stringParam := spec.Parameter{
-			Schema: spec.NewSchemaSpec(),
+		stringParam := openapi.Parameter{
+			Schema: openapi.NewSchemaSpec(),
 		}
 		err := op.parseParamAttribute(
 			" default(test) maxlength(100) minlength(0) format(csv)",
@@ -2011,8 +1987,8 @@ func TestParseAndExtractionParamAttributeV3(t *testing.T) {
 	})
 
 	t.Run("array", func(t *testing.T) {
-		arrayParam := spec.Parameter{
-			Schema: spec.NewSchemaSpec(),
+		arrayParam := openapi.Parameter{
+			Schema: openapi.NewSchemaSpec(),
 		}
 
 		arrayParam.In = "path"
@@ -2070,7 +2046,7 @@ func TestParseSecurityCommentV3(t *testing.T) {
 	err := operation.ParseComment(comment, nil)
 	assert.NoError(t, err)
 
-	expected := []spec.SecurityRequirement{{
+	expected := []openapi.SecurityRequirement{{
 		"OAuth2Implicit": {"read", "write"},
 	}}
 
@@ -2086,7 +2062,7 @@ func TestParseSecurityCommentSimpleV3(t *testing.T) {
 	err := operation.ParseComment(comment, nil)
 	assert.NoError(t, err)
 
-	expected := []spec.SecurityRequirement{{
+	expected := []openapi.SecurityRequirement{{
 		"ApiKeyAuth": {},
 	}}
 
@@ -2102,7 +2078,7 @@ func TestParseSecurityCommentOrV3(t *testing.T) {
 	err := operation.ParseComment(comment, nil)
 	assert.NoError(t, err)
 
-	expected := []spec.SecurityRequirement{{
+	expected := []openapi.SecurityRequirement{{
 		"OAuth2Implicit": {"read", "write"},
 		"Firebase":       {""},
 	}}
@@ -2368,12 +2344,12 @@ func TestProcessProduceComment(t *testing.T) {
 	err := operation.ParseComment(comment, nil)
 	require.NoError(t, err)
 
-	operation.Responses.Spec.Response = make(map[string]*spec.RefOrSpec[spec.Extendable[spec.Response]])
-	operation.Responses.Spec.Response["200"] = spec.NewResponseSpec()
-	operation.Responses.Spec.Response["201"] = spec.NewResponseSpec()
-	operation.Responses.Spec.Response["204"] = spec.NewResponseSpec()
-	operation.Responses.Spec.Response["400"] = spec.NewResponseSpec()
-	operation.Responses.Spec.Response["500"] = spec.NewResponseSpec()
+	operation.Responses.Spec.Response = make(map[string]*openapi.RefOrSpec[openapi.Extendable[openapi.Response]])
+	operation.Responses.Spec.Response["200"] = openapi.NewResponseSpec()
+	operation.Responses.Spec.Response["201"] = openapi.NewResponseSpec()
+	operation.Responses.Spec.Response["204"] = openapi.NewResponseSpec()
+	operation.Responses.Spec.Response["400"] = openapi.NewResponseSpec()
+	operation.Responses.Spec.Response["500"] = openapi.NewResponseSpec()
 
 	err = operation.ProcessProduceComment()
 	require.NoError(t, err)
@@ -2616,19 +2592,19 @@ func TestProcessDiscriminatorCommentAppliedToOneOfV3(t *testing.T) {
 	require.NoError(t, err)
 
 	// Simulate two @Success that produce a oneOf
-	schema1 := spec.NewSchemaRef(spec.NewRef("#/components/schemas/web.Cat"))
-	schema2 := spec.NewSchemaRef(spec.NewRef("#/components/schemas/web.Dog"))
-	oneOfSchema := spec.NewSchemaSpec()
-	oneOfSchema.Spec.OneOf = []*spec.RefOrSpec[spec.Schema]{schema1, schema2}
+	schema1 := openapi.NewSchemaRef(openapi.NewRef("#/components/schemas/web.Cat"))
+	schema2 := openapi.NewSchemaRef(openapi.NewRef("#/components/schemas/web.Dog"))
+	oneOfSchema := openapi.NewSchemaSpec()
+	oneOfSchema.Spec.OneOf = []*openapi.RefOrSpec[openapi.Schema]{schema1, schema2}
 
-	response := spec.NewResponseSpec()
+	response := openapi.NewResponseSpec()
 	response.Spec.Spec.Description = "OK"
-	response.Spec.Spec.Content = map[string]*spec.Extendable[spec.MediaType]{
+	response.Spec.Spec.Content = map[string]*openapi.Extendable[openapi.MediaType]{
 		"application/json": {
-			Spec: &spec.MediaType{Schema: oneOfSchema},
+			Spec: &openapi.MediaType{Schema: oneOfSchema},
 		},
 	}
-	operation.Responses.Spec.Response = map[string]*spec.RefOrSpec[spec.Extendable[spec.Response]]{
+	operation.Responses.Spec.Response = map[string]*openapi.RefOrSpec[openapi.Extendable[openapi.Response]]{
 		"200": response,
 	}
 
@@ -2648,19 +2624,19 @@ func TestProcessDiscriminatorCommentWithMappingV3(t *testing.T) {
 	err := operation.ParseComment("/@Discriminator pet_type cat=#/components/schemas/web.Cat,dog=#/components/schemas/web.Dog", nil)
 	require.NoError(t, err)
 
-	schema1 := spec.NewSchemaRef(spec.NewRef("#/components/schemas/web.Cat"))
-	schema2 := spec.NewSchemaRef(spec.NewRef("#/components/schemas/web.Dog"))
-	oneOfSchema := spec.NewSchemaSpec()
-	oneOfSchema.Spec.OneOf = []*spec.RefOrSpec[spec.Schema]{schema1, schema2}
+	schema1 := openapi.NewSchemaRef(openapi.NewRef("#/components/schemas/web.Cat"))
+	schema2 := openapi.NewSchemaRef(openapi.NewRef("#/components/schemas/web.Dog"))
+	oneOfSchema := openapi.NewSchemaSpec()
+	oneOfSchema.Spec.OneOf = []*openapi.RefOrSpec[openapi.Schema]{schema1, schema2}
 
-	response := spec.NewResponseSpec()
+	response := openapi.NewResponseSpec()
 	response.Spec.Spec.Description = "OK"
-	response.Spec.Spec.Content = map[string]*spec.Extendable[spec.MediaType]{
+	response.Spec.Spec.Content = map[string]*openapi.Extendable[openapi.MediaType]{
 		"application/json": {
-			Spec: &spec.MediaType{Schema: oneOfSchema},
+			Spec: &openapi.MediaType{Schema: oneOfSchema},
 		},
 	}
-	operation.Responses.Spec.Response = map[string]*spec.RefOrSpec[spec.Extendable[spec.Response]]{
+	operation.Responses.Spec.Response = map[string]*openapi.RefOrSpec[openapi.Extendable[openapi.Response]]{
 		"200": response,
 	}
 
@@ -2683,16 +2659,16 @@ func TestProcessDiscriminatorCommentSkipsNonOneOfV3(t *testing.T) {
 	require.NoError(t, err)
 
 	// Single schema (no oneOf)
-	singleSchema := spec.NewSchemaRef(spec.NewRef("#/components/schemas/web.Cat"))
+	singleSchema := openapi.NewSchemaRef(openapi.NewRef("#/components/schemas/web.Cat"))
 
-	response := spec.NewResponseSpec()
+	response := openapi.NewResponseSpec()
 	response.Spec.Spec.Description = "OK"
-	response.Spec.Spec.Content = map[string]*spec.Extendable[spec.MediaType]{
+	response.Spec.Spec.Content = map[string]*openapi.Extendable[openapi.MediaType]{
 		"application/json": {
-			Spec: &spec.MediaType{Schema: singleSchema},
+			Spec: &openapi.MediaType{Schema: singleSchema},
 		},
 	}
-	operation.Responses.Spec.Response = map[string]*spec.RefOrSpec[spec.Extendable[spec.Response]]{
+	operation.Responses.Spec.Response = map[string]*openapi.RefOrSpec[openapi.Extendable[openapi.Response]]{
 		"200": response,
 	}
 
@@ -2711,15 +2687,15 @@ func TestProcessDiscriminatorCommentAppliedToRequestBodyV3(t *testing.T) {
 	err := operation.ParseComment("/@Discriminator body_type", nil)
 	require.NoError(t, err)
 
-	schema1 := spec.NewSchemaRef(spec.NewRef("#/components/schemas/web.Cat"))
-	schema2 := spec.NewSchemaRef(spec.NewRef("#/components/schemas/web.Dog"))
-	oneOfSchema := spec.NewSchemaSpec()
-	oneOfSchema.Spec.OneOf = []*spec.RefOrSpec[spec.Schema]{schema1, schema2}
+	schema1 := openapi.NewSchemaRef(openapi.NewRef("#/components/schemas/web.Cat"))
+	schema2 := openapi.NewSchemaRef(openapi.NewRef("#/components/schemas/web.Dog"))
+	oneOfSchema := openapi.NewSchemaSpec()
+	oneOfSchema.Spec.OneOf = []*openapi.RefOrSpec[openapi.Schema]{schema1, schema2}
 
-	operation.RequestBody = spec.NewRequestBodySpec()
-	operation.RequestBody.Spec.Spec.Content = map[string]*spec.Extendable[spec.MediaType]{
+	operation.RequestBody = openapi.NewRequestBodySpec()
+	operation.RequestBody.Spec.Spec.Content = map[string]*openapi.Extendable[openapi.MediaType]{
 		"application/json": {
-			Spec: &spec.MediaType{Schema: oneOfSchema},
+			Spec: &openapi.MediaType{Schema: oneOfSchema},
 		},
 	}
 

@@ -53,7 +53,7 @@ func (pkg *PackageDefinitions) AddFile(pkgPath string, file *ast.File) *PackageD
 	return pkg
 }
 
-// AddTypeSpec add a type spec.
+// AddTypeSpec add a type openapi.
 func (pkg *PackageDefinitions) AddTypeSpec(name string, typeSpec *TypeSpecDef) *PackageDefinitions {
 	pkg.TypeDefinitions[name] = typeSpec
 	return pkg

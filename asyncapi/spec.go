@@ -3,7 +3,7 @@ package asyncapi
 import (
 	"encoding/json"
 
-	openapi "github.com/sv-tools/openapi/spec"
+	openapi "github.com/wbeuil/openapi"
 )
 
 // AsyncAPI is the root document object for the AsyncAPI specification.
