@@ -25,9 +25,11 @@ const (
 	parseVendorFlag          = "parseVendor"
 	parseDependencyFlag      = "parseDependency"
 	parseDependencyLevelFlag = "parseDependencyLevel"
+	noParseDependencyFlag    = "no-parseDependency"
 	markdownFilesFlag        = "markdownFiles"
 	codeExampleFilesFlag     = "codeExampleFiles"
 	parseInternalFlag        = "parseInternal"
+	noParseInternalFlag      = "no-parseInternal"
 	generatedTimeFlag        = "generatedTime"
 	requiredByDefaultFlag    = "requiredByDefault"
 	parseDepthFlag           = "parseDepth"
@@ -38,13 +40,14 @@ const (
 	tagsFlag                 = "tags"
 	parseExtensionFlag       = "parseExtension"
 	templateDelimsFlag       = "templateDelims"
-	openAPIVersionFlag       = "v3.1"
+	v2Flag                   = "v2"
 	packageName              = "packageName"
 	collectionFormatFlag     = "collectionFormat"
 	packagePrefixFlag        = "packagePrefix"
 	stateFlag                = "state"
 	parseFuncBodyFlag        = "parseFuncBody"
 	useStructNameFlag        = "useStructName"
+	noUseStructNameFlag      = "no-useStructName"
 	generateAsyncAPIDocFlag  = "generateAsyncAPI"
 	asyncOutputTypesFlag     = "asyncOutputTypes"
 )
@@ -101,7 +104,12 @@ var initFlags = []cli.Flag{
 	&cli.BoolFlag{
 		Name:    parseDependencyFlag,
 		Aliases: []string{"pd"},
-		Usage:   "Parse go files inside dependency folder, disabled by default",
+		Value:   true,
+		Usage:   "Parse go files inside dependency folder",
+	},
+	&cli.BoolFlag{
+		Name:  noParseDependencyFlag,
+		Usage: "Disable parsing go files inside dependency folder",
 	},
 	&cli.StringFlag{
 		Name:    markdownFilesFlag,
@@ -117,7 +125,12 @@ var initFlags = []cli.Flag{
 	},
 	&cli.BoolFlag{
 		Name:  parseInternalFlag,
-		Usage: "Parse go files in internal packages, disabled by default",
+		Value: true,
+		Usage: "Parse go files in internal packages",
+	},
+	&cli.BoolFlag{
+		Name:  noParseInternalFlag,
+		Usage: "Disable parsing go files in internal packages",
 	},
 	&cli.BoolFlag{
 		Name:  generatedTimeFlag,
@@ -159,9 +172,9 @@ var initFlags = []cli.Flag{
 		Usage:   "A comma-separated list of tags to filter the APIs for which the documentation is generated.Special case if the tag is prefixed with the '!' character then the APIs with that tag will be excluded",
 	},
 	&cli.BoolFlag{
-		Name:  openAPIVersionFlag,
+		Name:  v2Flag,
 		Value: false,
-		Usage: "Generate OpenAPI V3.1 spec",
+		Usage: "Generate Swagger 2.0 spec instead of OpenAPI 3.2",
 	},
 	&cli.StringFlag{
 		Name:    templateDelimsFlag,
@@ -198,11 +211,17 @@ var initFlags = []cli.Flag{
 	&cli.BoolFlag{
 		Name:    useStructNameFlag,
 		Aliases: []string{"st"},
-		Usage:   "Dont use those ugly full-path names when using dependency flag",
+		Value:   true,
+		Usage:   "Use struct name instead of full-path names when using dependency flag",
 	},
 	&cli.BoolFlag{
-		Name:  generateAsyncAPIDocFlag,
-		Usage: "Generate AsyncAPI 3.1 spec alongside OpenAPI",
+		Name:  noUseStructNameFlag,
+		Usage: "Disable using struct name instead of full-path names",
+	},
+	&cli.BoolFlag{
+		Name:    generateAsyncAPIDocFlag,
+		Aliases: []string{"async"},
+		Usage:   "Generate AsyncAPI 3.1 spec alongside OpenAPI",
 	},
 	&cli.StringFlag{
 		Name:  asyncOutputTypesFlag,
@@ -259,7 +278,7 @@ func initAction(ctx *cli.Context) error {
 
 	var pdv = ctx.Int(parseDependencyLevelFlag)
 	if pdv == 0 {
-		if ctx.Bool(parseDependencyFlag) {
+		if !ctx.Bool(noParseDependencyFlag) {
 			pdv = 1
 		}
 	}
@@ -274,7 +293,7 @@ func initAction(ctx *cli.Context) error {
 		ParseVendor:         ctx.Bool(parseVendorFlag),
 		ParseDependency:     pdv,
 		MarkdownFilesDir:    ctx.String(markdownFilesFlag),
-		ParseInternal:       ctx.Bool(parseInternalFlag),
+		ParseInternal:       ctx.Bool(parseInternalFlag) && !ctx.Bool(noParseInternalFlag),
 		GeneratedTime:       ctx.Bool(generatedTimeFlag),
 		RequiredByDefault:   ctx.Bool(requiredByDefaultFlag),
 		CodeExampleFilesDir: ctx.String(codeExampleFilesFlag),
@@ -287,12 +306,12 @@ func initAction(ctx *cli.Context) error {
 		RightTemplateDelim:  rightDelim,
 		PackageName:         ctx.String(packageName),
 		Debugger:            logger,
-		GenerateOpenAPI3Doc: ctx.Bool(openAPIVersionFlag),
+		GenerateOpenAPI3Doc: !ctx.Bool(v2Flag),
 		CollectionFormat:    collectionFormat,
 		PackagePrefix:       ctx.String(packagePrefixFlag),
 		State:               ctx.String(stateFlag),
 		ParseFuncBody:       ctx.Bool(parseFuncBodyFlag),
-		UseStructNames:      ctx.Bool(useStructNameFlag),
+		UseStructNames:      ctx.Bool(useStructNameFlag) && !ctx.Bool(noUseStructNameFlag),
 		GenerateAsyncAPIDoc: ctx.Bool(generateAsyncAPIDocFlag),
 		AsyncOutputTypes:    strings.Split(ctx.String(asyncOutputTypesFlag), ","),
 	})
@@ -301,7 +320,7 @@ func initAction(ctx *cli.Context) error {
 func main() {
 	app := cli.NewApp()
 	app.Version = swag.Version
-	app.Usage = "Automatically generate RESTful API documentation with Swagger 2.0 for Go."
+	app.Usage = "Automatically generate RESTful API documentation with OpenAPI 3.2 for Go."
 	app.Commands = []*cli.Command{
 		{
 			Name:    "init",
