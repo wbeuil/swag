@@ -312,6 +312,37 @@ func TestParserParseGeneralAPITagDocsV3(t *testing.T) {
 	assert.Equal(t, "Best example documentation", parser.openAPI.Tags[0].Spec.ExternalDocs.Spec.Description)
 }
 
+func TestParserParseGeneralAPISchemaDialectV3(t *testing.T) {
+	t.Parallel()
+
+	parser := New(GenerateOpenAPI3Doc(true))
+	err := parser.parseGeneralAPIInfoV3([]string{
+		"@schemadialect https://spec.openapis.org/oas/3.1/dialect/base",
+	})
+	assert.NoError(t, err)
+	assert.Equal(t, "https://spec.openapis.org/oas/3.1/dialect/base", parser.openAPI.JsonSchemaDialect)
+}
+
+func TestProcessWebhookOperationV3(t *testing.T) {
+	t.Parallel()
+
+	p := New(GenerateOpenAPI3Doc(true))
+	operation := NewOperationV3(p)
+	operation.Summary = "Stripe webhook"
+	operation.WebhookProperties = []WebhookProperties{
+		{Name: "stripeEvent", HTTPMethod: "POST"},
+	}
+
+	err := processWebhookOperationV3(p, operation)
+	require.NoError(t, err)
+
+	assert.Len(t, p.openAPI.WebHooks, 1)
+	webhook := p.openAPI.WebHooks["stripeEvent"]
+	require.NotNil(t, webhook)
+	require.NotNil(t, webhook.Spec.Spec.Post)
+	assert.Equal(t, "Stripe webhook", webhook.Spec.Spec.Post.Spec.Summary)
+}
+
 func TestGetAllGoFileInfoV3(t *testing.T) {
 	t.Parallel()
 

@@ -8,26 +8,26 @@ import (
 
 // AsyncAPI is the root document object for the AsyncAPI specification.
 type AsyncAPI struct {
-	Asyncapi           string                 `json:"asyncapi"`
-	Id                 string                 `json:"id,omitempty"`
-	Info               *Info                  `json:"info"`
-	Servers            map[string]*Server     `json:"servers,omitempty"`
-	DefaultContentType string                 `json:"defaultContentType,omitempty"`
-	Channels           map[string]*Channel    `json:"channels"`
-	Operations         map[string]*Operation  `json:"operations"`
-	Components         *Components            `json:"components,omitempty"`
-	Tags               []*Tag                 `json:"tags,omitempty"`
-	ExternalDocs       *ExternalDocs          `json:"externalDocs,omitempty"`
+	Asyncapi           string                `json:"asyncapi"`
+	Id                 string                `json:"id,omitempty"`
+	Info               *Info                 `json:"info"`
+	Servers            map[string]*Server    `json:"servers,omitempty"`
+	DefaultContentType string                `json:"defaultContentType,omitempty"`
+	Channels           map[string]*Channel   `json:"channels"`
+	Operations         map[string]*Operation `json:"operations"`
+	Components         *Components           `json:"components,omitempty"`
+	Tags               []*Tag                `json:"tags,omitempty"`
+	ExternalDocs       *ExternalDocs         `json:"externalDocs,omitempty"`
 }
 
 // Info provides metadata about the API.
 type Info struct {
-	Title          string        `json:"title,omitempty"`
-	Version        string        `json:"version,omitempty"`
-	Description    string        `json:"description,omitempty"`
-	TermsOfService string        `json:"termsOfService,omitempty"`
-	Contact        *Contact      `json:"contact,omitempty"`
-	License        *License      `json:"license,omitempty"`
+	Title          string   `json:"title,omitempty"`
+	Version        string   `json:"version,omitempty"`
+	Description    string   `json:"description,omitempty"`
+	TermsOfService string   `json:"termsOfService,omitempty"`
+	Contact        *Contact `json:"contact,omitempty"`
+	License        *License `json:"license,omitempty"`
 }
 
 // Contact information for the exposed API.
@@ -45,12 +45,12 @@ type License struct {
 
 // Server represents a message broker, a web server, or any other kind of computer program capable of sending and/or receiving data.
 type Server struct {
-	Host            string                    `json:"host"`
-	Protocol        string                    `json:"protocol"`
-	ProtocolVersion string                    `json:"protocolVersion,omitempty"`
-	PathName        string                    `json:"pathname,omitempty"`
-	Description     string                    `json:"description,omitempty"`
-	Title           string                    `json:"title,omitempty"`
+	Host            string                     `json:"host"`
+	Protocol        string                     `json:"protocol"`
+	ProtocolVersion string                     `json:"protocolVersion,omitempty"`
+	PathName        string                     `json:"pathname,omitempty"`
+	Description     string                     `json:"description,omitempty"`
+	Title           string                     `json:"title,omitempty"`
 	Variables       map[string]*ServerVariable `json:"variables,omitempty"`
 	Security        []SecurityRequirement      `json:"security,omitempty"`
 	Tags            []*Tag                     `json:"tags,omitempty"`
@@ -70,54 +70,54 @@ type SecurityRequirement map[string][]string
 
 // Channel represents a message broker channel.
 type Channel struct {
-	Address     string                `json:"address,omitempty"`
-	Messages    map[string]*Message   `json:"messages,omitempty"`
-	Title       string                `json:"title,omitempty"`
-	Description string                `json:"description,omitempty"`
-	Parameters  map[string]*Parameter `json:"parameters,omitempty"`
-	Tags        []*Tag                `json:"tags,omitempty"`
+	Address     string                 `json:"address,omitempty"`
+	Messages    map[string]*Message    `json:"messages,omitempty"`
+	Title       string                 `json:"title,omitempty"`
+	Description string                 `json:"description,omitempty"`
+	Parameters  map[string]*Parameter  `json:"parameters,omitempty"`
+	Tags        []*Tag                 `json:"tags,omitempty"`
 	Bindings    map[string]interface{} `json:"bindings,omitempty"`
 }
 
 // Parameter describes a Channel parameter.
 type Parameter struct {
-	Description string      `json:"description,omitempty"`
-	Location    string      `json:"location,omitempty"`
-	Enum        []string    `json:"enum,omitempty"`
-	Default     string      `json:"default,omitempty"`
-	Examples    []string    `json:"examples,omitempty"`
+	Description string   `json:"description,omitempty"`
+	Location    string   `json:"location,omitempty"`
+	Enum        []string `json:"enum,omitempty"`
+	Default     string   `json:"default,omitempty"`
+	Examples    []string `json:"examples,omitempty"`
 }
 
 // Operation describes a send or receive operation.
 type Operation struct {
-	Action      string              `json:"action,omitempty"` // send or receive
-	Channel     *Reference          `json:"channel,omitempty"`
-	Title       string              `json:"title,omitempty"`
-	Summary     string              `json:"summary,omitempty"`
-	Description string              `json:"description,omitempty"`
-	Security    []SecurityRequirement `json:"security,omitempty"`
-	Tags        []*Tag              `json:"tags,omitempty"`
-	Traits      []*OperationTrait   `json:"traits,omitempty"`
-	Messages    []*Message          `json:"messages,omitempty"`
-	Reply       *OperationReply     `json:"reply,omitempty"`
-	Bindings    map[string]interface{} `json:"bindings,omitempty"`
-	ExternalDocs *ExternalDocs      `json:"externalDocs,omitempty"`
+	Action       string                 `json:"action,omitempty"` // send or receive
+	Channel      *Reference             `json:"channel,omitempty"`
+	Title        string                 `json:"title,omitempty"`
+	Summary      string                 `json:"summary,omitempty"`
+	Description  string                 `json:"description,omitempty"`
+	Security     []SecurityRequirement  `json:"security,omitempty"`
+	Tags         []*Tag                 `json:"tags,omitempty"`
+	Traits       []*OperationTrait      `json:"traits,omitempty"`
+	Messages     []*Message             `json:"messages,omitempty"`
+	Reply        *OperationReply        `json:"reply,omitempty"`
+	Bindings     map[string]interface{} `json:"bindings,omitempty"`
+	ExternalDocs *ExternalDocs          `json:"externalDocs,omitempty"`
 }
 
 // OperationTrait is a reusable trait for an Operation.
 type OperationTrait struct {
-	Title       string              `json:"title,omitempty"`
-	Summary     string              `json:"summary,omitempty"`
-	Description string              `json:"description,omitempty"`
-	Security    []SecurityRequirement `json:"security,omitempty"`
-	Tags        []*Tag              `json:"tags,omitempty"`
+	Title       string                 `json:"title,omitempty"`
+	Summary     string                 `json:"summary,omitempty"`
+	Description string                 `json:"description,omitempty"`
+	Security    []SecurityRequirement  `json:"security,omitempty"`
+	Tags        []*Tag                 `json:"tags,omitempty"`
 	Bindings    map[string]interface{} `json:"bindings,omitempty"`
 }
 
 // OperationReply describes the reply part of an operation.
 type OperationReply struct {
-	Channel  *Reference   `json:"channel,omitempty"`
-	Messages []*Message   `json:"messages,omitempty"`
+	Channel  *Reference             `json:"channel,omitempty"`
+	Messages []*Message             `json:"messages,omitempty"`
 	Address  *OperationReplyAddress `json:"address,omitempty"`
 }
 
@@ -129,34 +129,34 @@ type OperationReplyAddress struct {
 
 // Message describes a message.
 type Message struct {
-	Name            string                 `json:"name,omitempty"`
-	Title           string                 `json:"title,omitempty"`
-	Summary         string                 `json:"summary,omitempty"`
-	Description     string                 `json:"description,omitempty"`
-	ContentType     string                 `json:"contentType,omitempty"`
-	SchemaFormat    string                 `json:"schemaFormat,omitempty"`
-	CorrelationID   *Reference             `json:"correlationId,omitempty"`
-	Headers         *MultiFormatSchema     `json:"headers,omitempty"`
-	Payload         *MultiFormatSchema     `json:"payload,omitempty"`
-	Tags            []*Tag                 `json:"tags,omitempty"`
-	Examples        []*MessageExample      `json:"examples,omitempty"`
-	Traits          []*MessageTrait        `json:"traits,omitempty"`
-	Bindings        map[string]interface{} `json:"bindings,omitempty"`
-	Ref             string                 `json:"$ref,omitempty"`
+	Name          string                 `json:"name,omitempty"`
+	Title         string                 `json:"title,omitempty"`
+	Summary       string                 `json:"summary,omitempty"`
+	Description   string                 `json:"description,omitempty"`
+	ContentType   string                 `json:"contentType,omitempty"`
+	SchemaFormat  string                 `json:"schemaFormat,omitempty"`
+	CorrelationID *Reference             `json:"correlationId,omitempty"`
+	Headers       *MultiFormatSchema     `json:"headers,omitempty"`
+	Payload       *MultiFormatSchema     `json:"payload,omitempty"`
+	Tags          []*Tag                 `json:"tags,omitempty"`
+	Examples      []*MessageExample      `json:"examples,omitempty"`
+	Traits        []*MessageTrait        `json:"traits,omitempty"`
+	Bindings      map[string]interface{} `json:"bindings,omitempty"`
+	Ref           string                 `json:"$ref,omitempty"`
 }
 
 // MessageTrait is a reusable trait for a Message.
 type MessageTrait struct {
-	Name            string                 `json:"name,omitempty"`
-	Title           string                 `json:"title,omitempty"`
-	Summary         string                 `json:"summary,omitempty"`
-	Description     string                 `json:"description,omitempty"`
-	ContentType     string                 `json:"contentType,omitempty"`
-	SchemaFormat    string                 `json:"schemaFormat,omitempty"`
-	CorrelationID   *Reference             `json:"correlationId,omitempty"`
-	Headers         *MultiFormatSchema     `json:"headers,omitempty"`
-	Tags            []*Tag                 `json:"tags,omitempty"`
-	Bindings        map[string]interface{} `json:"bindings,omitempty"`
+	Name          string                 `json:"name,omitempty"`
+	Title         string                 `json:"title,omitempty"`
+	Summary       string                 `json:"summary,omitempty"`
+	Description   string                 `json:"description,omitempty"`
+	ContentType   string                 `json:"contentType,omitempty"`
+	SchemaFormat  string                 `json:"schemaFormat,omitempty"`
+	CorrelationID *Reference             `json:"correlationId,omitempty"`
+	Headers       *MultiFormatSchema     `json:"headers,omitempty"`
+	Tags          []*Tag                 `json:"tags,omitempty"`
+	Bindings      map[string]interface{} `json:"bindings,omitempty"`
 }
 
 // MessageExample represents an example of a message.
@@ -169,23 +169,23 @@ type MessageExample struct {
 
 // Components holds a set of reusable objects for different aspects of the AsyncAPI Specification.
 type Components struct {
-	Schemas         map[string]*openapi.Schema `json:"schemas,omitempty"`
-	Servers         map[string]*Server         `json:"servers,omitempty"`
-	Channels        map[string]*Channel        `json:"channels,omitempty"`
-	Messages        map[string]*Message        `json:"messages,omitempty"`
-	SecuritySchemes map[string]*SecurityScheme `json:"securitySchemes,omitempty"`
-	ServerVariables map[string]*ServerVariable `json:"serverVariables,omitempty"`
-	Parameters      map[string]*Parameter      `json:"parameters,omitempty"`
-	CorrelationIds  map[string]*CorrelationID  `json:"correlationIds,omitempty"`
-	Replies         map[string]*OperationReply `json:"replies,omitempty"`
-	ReplyAddresses  map[string]*OperationReplyAddress `json:"replyAddresses,omitempty"`
-	Operations      map[string]*Operation      `json:"operations,omitempty"`
-	OperationTraits map[string]*OperationTrait `json:"operationTraits,omitempty"`
-	MessageTraits   map[string]*MessageTrait   `json:"messageTraits,omitempty"`
-	ServerBindings  map[string]interface{}     `json:"serverBindings,omitempty"`
-	ChannelBindings map[string]interface{}     `json:"channelBindings,omitempty"`
-	OperationBindings map[string]interface{}   `json:"operationBindings,omitempty"`
-	MessageBindings map[string]interface{}     `json:"messageBindings,omitempty"`
+	Schemas           map[string]*openapi.Schema        `json:"schemas,omitempty"`
+	Servers           map[string]*Server                `json:"servers,omitempty"`
+	Channels          map[string]*Channel               `json:"channels,omitempty"`
+	Messages          map[string]*Message               `json:"messages,omitempty"`
+	SecuritySchemes   map[string]*SecurityScheme        `json:"securitySchemes,omitempty"`
+	ServerVariables   map[string]*ServerVariable        `json:"serverVariables,omitempty"`
+	Parameters        map[string]*Parameter             `json:"parameters,omitempty"`
+	CorrelationIds    map[string]*CorrelationID         `json:"correlationIds,omitempty"`
+	Replies           map[string]*OperationReply        `json:"replies,omitempty"`
+	ReplyAddresses    map[string]*OperationReplyAddress `json:"replyAddresses,omitempty"`
+	Operations        map[string]*Operation             `json:"operations,omitempty"`
+	OperationTraits   map[string]*OperationTrait        `json:"operationTraits,omitempty"`
+	MessageTraits     map[string]*MessageTrait          `json:"messageTraits,omitempty"`
+	ServerBindings    map[string]interface{}            `json:"serverBindings,omitempty"`
+	ChannelBindings   map[string]interface{}            `json:"channelBindings,omitempty"`
+	OperationBindings map[string]interface{}            `json:"operationBindings,omitempty"`
+	MessageBindings   map[string]interface{}            `json:"messageBindings,omitempty"`
 }
 
 // Tag represents metadata about an API.
@@ -220,8 +220,8 @@ type SecurityScheme struct {
 
 // OAuthFlows allows configuration of the supported OAuth Flows.
 type OAuthFlows struct {
-	Implicit    *OAuthFlow `json:"implicit,omitempty"`
-	Password    *OAuthFlow `json:"password,omitempty"`
+	Implicit          *OAuthFlow `json:"implicit,omitempty"`
+	Password          *OAuthFlow `json:"password,omitempty"`
 	ClientCredentials *OAuthFlow `json:"clientCredentials,omitempty"`
 	AuthorizationCode *OAuthFlow `json:"authorizationCode,omitempty"`
 }
