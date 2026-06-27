@@ -21,24 +21,8 @@ var specialTagForSplit = map[string]bool{
 	failureAttr:  true,
 	responseAttr: true,
 	headerAttr:   true,
-	// AsyncAPI attributes
-	asyncapiAttr:              true,
-	asyncTitleAttr:            true,
-	asyncVersionAttr:          true,
-	asyncDescriptionAttr:      true,
-	asyncLicenseNameAttr:      true,
-	asyncLicenseURLAttr:       true,
-	asyncDefaultContentTypeAttr: true,
-	asyncServerAttr:           true,
-	asyncChannelAttr:          true,
-	asyncOperationAttr:        true,
-	asyncActionAttr:           true,
-	asyncMessageAttr:          true,
-	asyncSummaryAttr:          true,
-	asyncTagAttr:              true,
-	asyncBindingAttr:          true,
-	asyncExternalDocsDescAttr: true,
-	asyncExternalDocsURLAttr:  true,
+	// AsyncAPI attributes with multi-field bodies (quoted strings / braces)
+	asyncMessageAttr: true,
 }
 
 var skipChar = map[byte]byte{

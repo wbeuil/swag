@@ -259,7 +259,7 @@ func Test_splitComment2(t *testing.T) {
 			},
 			"	@Param	some_id	body	web.Pet	true	\"Some ID\"",
 		},
-		// AsyncAPI attributes
+		// AsyncAPI attributes with multi-field bodies
 		{
 			"test_splitComment2_async_message",
 			args{
@@ -267,14 +267,6 @@ func Test_splitComment2(t *testing.T) {
 				body: `   {object} UserEvent "A user event message" application/json`,
 			},
 			"	{object}	UserEvent	\"A user event message\"	application/json",
-		},
-		{
-			"test_splitComment2_async_channel",
-			args{
-				attr: "@asyncChannel",
-				body: `   userEvents`,
-			},
-			"	userEvents",
 		},
 	}
 	for _, tt := range tests {
