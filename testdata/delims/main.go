@@ -11,10 +11,10 @@ func ReadDoc() string {
 	return doc
 }
 
-// @title Swagger Example API
-// @version 1.0
-// @description Testing custom template delimeters
-// @termsOfService http://swagger.io/terms/
+//	@title			Swagger Example API
+//	@version		1.0
+//	@description	Testing custom template delimeters
+//	@termsOfService	http://swagger.io/terms/
 
 func main() {
 	api.MyFunc()

@@ -47,67 +47,67 @@ type MapValue struct {
 	Field4 string
 }
 
-// @Description get Foo
-// @ID get-foo
-// @Accept json
-// @Produce json
-// @Success 200 {object} api.Foo
-// @Router /testapi/get-foo [get]
+//	@Description	get Foo
+//	@ID				get-foo
+//	@Accept			json
+//	@Produce		json
+//	@Success		200	{object}	api.Foo
+//	@Router			/testapi/get-foo [get]
 func GetFoo(w http.ResponseWriter, r *http.Request) {
 	//write your code
 	var _ = Foo{}
 }
 
-// @Description get Bar
-// @ID get-bar
-// @Accept json
-// @Produce json
-// @Success 200 {object} api.Bar
-// @Router /testapi/get-bar [get]
+//	@Description	get Bar
+//	@ID				get-bar
+//	@Accept			json
+//	@Produce		json
+//	@Success		200	{object}	api.Bar
+//	@Router			/testapi/get-bar [get]
 func GetBar(w http.ResponseWriter, r *http.Request) {
 	//write your code
 	var _ = Bar{}
 }
 
-// @Description get FooBar
-// @ID get-foobar
-// @Accept json
-// @Produce json
-// @Success 200 {object} api.FooBar
-// @Router /testapi/get-foobar [get]
+//	@Description	get FooBar
+//	@ID				get-foobar
+//	@Accept			json
+//	@Produce		json
+//	@Success		200	{object}	api.FooBar
+//	@Router			/testapi/get-foobar [get]
 func GetFooBar(w http.ResponseWriter, r *http.Request) {
 	//write your code
 	var _ = FooBar{}
 }
 
-// @Description get FooBarPointer
-// @ID get-foobar-pointer
-// @Accept json
-// @Produce json
-// @Success 200 {object} api.FooBarPointer
-// @Router /testapi/get-foobar-pointer [get]
+//	@Description	get FooBarPointer
+//	@ID				get-foobar-pointer
+//	@Accept			json
+//	@Produce		json
+//	@Success		200	{object}	api.FooBarPointer
+//	@Router			/testapi/get-foobar-pointer [get]
 func GetFooBarPointer(w http.ResponseWriter, r *http.Request) {
 	//write your code
 	var _ = FooBarPointer{}
 }
 
-// @Description get BarMap
-// @ID get-bar-map
-// @Accept json
-// @Produce json
-// @Success 200 {object} api.BarMap
-// @Router /testapi/get-barmap [get]
+//	@Description	get BarMap
+//	@ID				get-bar-map
+//	@Accept			json
+//	@Produce		json
+//	@Success		200	{object}	api.BarMap
+//	@Router			/testapi/get-barmap [get]
 func GetBarMap(w http.ResponseWriter, r *http.Request) {
 	//write your code
 	var _ = BarMap{}
 }
 
-// @Description get FoorBarMap
-// @ID get-foo-bar-map
-// @Accept json
-// @Produce json
-// @Success 200 {object} api.FooBarMap
-// @Router /testapi/get-foobarmap [get]
+//	@Description	get FoorBarMap
+//	@ID				get-foo-bar-map
+//	@Accept			json
+//	@Produce		json
+//	@Success		200	{object}	api.FooBarMap
+//	@Router			/testapi/get-foobarmap [get]
 func GetFooBarMap(w http.ResponseWriter, r *http.Request) {
 	//write your code
 	var _ = FooBarMap{}

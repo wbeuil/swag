@@ -27,11 +27,11 @@ type Pet struct {
 	IsAlive   bool     `json:"is_alive" example:"true"`
 }
 
-// @Summary Get all pets
-// @Description get all pets
-// @ID get-pets
-// @Success 200 {object} []web.Pet	"ok"
-// @Router /testapi/pets [get]
+//	@Summary		Get all pets
+//	@Description	get all pets
+//	@ID				get-pets
+//	@Success		200	{object}	[]web.Pet	"ok"
+//	@Router			/testapi/pets [get]
 func GetPets(w http.ResponseWriter, r *http.Request) {
 	_ = Cross{}
 	//write your code

@@ -23,8 +23,8 @@ import (
 	"github.com/swaggo/swag/v2/asyncapi"
 	"golang.org/x/text/cases"
 	"golang.org/x/text/language"
-	sigyaml "sigs.k8s.io/yaml"
 	yaml "gopkg.in/yaml.v3"
+	sigyaml "sigs.k8s.io/yaml"
 )
 
 var open = os.Open
@@ -60,9 +60,9 @@ func New() *Gen {
 		jsonIndent: func(data interface{}) ([]byte, error) {
 			return json.MarshalIndent(data, "", "    ")
 		},
-		jsonToYAML: sigyaml.JSONToYAML,
+		jsonToYAML:  sigyaml.JSONToYAML,
 		yamlMarshal: yaml.Marshal,
-		debug:      log.New(os.Stdout, "", log.LstdFlags),
+		debug:       log.New(os.Stdout, "", log.LstdFlags),
 	}
 
 	gen.outputTypeMap = map[string]genTypeWriter{

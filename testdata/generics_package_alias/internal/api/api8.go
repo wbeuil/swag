@@ -5,12 +5,12 @@ import (
 	_ "github.com/swaggo/swag/v2/testdata/generics_package_alias/internal/path2/v1"
 )
 
-// @Summary Create movie
-// @Description model from a package whose name conflicts with other packages
-// @Accept  json
-// @Produce  json
-// @Success 200 {object} v1.UniqueProduct ""
-// @Router /api15 [post]
+//	@Summary		Create movie
+//	@Description	model from a package whose name conflicts with other packages
+//	@Accept			json
+//	@Produce		json
+//	@Success		200	{object}	v1.UniqueProduct	""
+//	@Router			/api15 [post]
 func CreateMovie15() {
 
 }

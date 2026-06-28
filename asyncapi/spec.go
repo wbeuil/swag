@@ -13,8 +13,8 @@ type AsyncAPI struct {
 	Info               *Info                 `json:"info"`
 	Servers            map[string]*Server    `json:"servers,omitempty"`
 	DefaultContentType string                `json:"defaultContentType,omitempty"`
-	Channels           map[string]*Channel   `json:"channels"`
-	Operations         map[string]*Operation `json:"operations"`
+	Channels           map[string]*Channel   `json:"channels,omitempty"`
+	Operations         map[string]*Operation `json:"operations,omitempty"`
 	Components         *Components           `json:"components,omitempty"`
 	Tags               []*Tag                `json:"tags,omitempty"`
 	ExternalDocs       *ExternalDocs         `json:"externalDocs,omitempty"`
@@ -254,25 +254,6 @@ func NewAsyncAPI() *AsyncAPI {
 		Servers:    make(map[string]*Server),
 		Channels:   make(map[string]*Channel),
 		Operations: make(map[string]*Operation),
-		Components: &Components{
-			Schemas:           make(map[string]*openapi.Schema),
-			Servers:           make(map[string]*Server),
-			Channels:          make(map[string]*Channel),
-			Messages:          make(map[string]*Message),
-			SecuritySchemes:   make(map[string]*SecurityScheme),
-			ServerVariables:   make(map[string]*ServerVariable),
-			Parameters:        make(map[string]*Parameter),
-			CorrelationIds:    make(map[string]*CorrelationID),
-			Replies:           make(map[string]*OperationReply),
-			ReplyAddresses:    make(map[string]*OperationReplyAddress),
-			Operations:        make(map[string]*Operation),
-			OperationTraits:   make(map[string]*OperationTrait),
-			MessageTraits:     make(map[string]*MessageTrait),
-			ServerBindings:    make(map[string]interface{}),
-			ChannelBindings:   make(map[string]interface{}),
-			OperationBindings: make(map[string]interface{}),
-			MessageBindings:   make(map[string]interface{}),
-		},
 	}
 }
 

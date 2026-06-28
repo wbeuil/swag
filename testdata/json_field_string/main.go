@@ -16,14 +16,14 @@ type MyStruct struct {
 	UUIDs    []string `json:"uuids" type:"array,string" format:"uuid"` // string array with format
 }
 
-// @Summary Call DoSomething
-// @Description Does something
-// @Accept  json
-// @Produce  json
-// @Param body body MyStruct true "My Struct"
-// @Success 200 {object} MyStruct
-// @Failure 500
-// @Router /do-something [post]
+//	@Summary		Call DoSomething
+//	@Description	Does something
+//	@Accept			json
+//	@Produce		json
+//	@Param			body	body		MyStruct	true	"My Struct"
+//	@Success		200		{object}	MyStruct
+//	@Failure		500
+//	@Router			/do-something [post]
 func DoSomething(w http.ResponseWriter, r *http.Request) {
 	objectFromJSON := new(MyStruct)
 	if err := json.NewDecoder(r.Body).Decode(&objectFromJSON); err != nil {
@@ -33,11 +33,11 @@ func DoSomething(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(ojbectFromJSON)
 }
 
-// @title Swagger Example API
-// @version 1.0
-// @description This is a sample server.
-// @host localhost:4000
-// @basePath /
+//	@title			Swagger Example API
+//	@version		1.0
+//	@description	This is a sample server.
+//	@host			localhost:4000
+//	@basePath		/
 func main() {
 	http.HandleFund("/do-something", DoSomething)
 	http.ListenAndServe(":8080", nil)

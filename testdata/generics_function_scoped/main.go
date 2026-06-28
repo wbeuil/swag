@@ -6,11 +6,11 @@ import (
 	"github.com/swaggo/swag/v2/testdata/generics_function_scoped/api"
 )
 
-// @title Swagger Example API
-// @version 1.0
-// @description This is a sample server.
-// @host localhost:8080
-// @basePath /api
+//	@title			Swagger Example API
+//	@version		1.0
+//	@description	This is a sample server.
+//	@host			localhost:8080
+//	@basePath		/api
 func main() {
 	http.HandleFunc("/", api.GetGeneric)
 	http.HandleFunc("/renamed", api.GetGenericRenamed)

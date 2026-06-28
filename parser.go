@@ -1312,10 +1312,19 @@ func processAsyncOperation(parser *Parser, asyncOp *AsyncOperation) error {
 			continue
 		}
 		msgKey := msg.Name
+		if parser.asyncAPI.Components == nil {
+			parser.asyncAPI.Components = &asyncapi.Components{}
+		}
+		if parser.asyncAPI.Components.Messages == nil {
+			parser.asyncAPI.Components.Messages = make(map[string]*asyncapi.Message)
+		}
 		parser.asyncAPI.Components.Messages[msgKey] = msg
 
 		// Register schema in components if payload exists
 		if msg.Payload != nil && msg.Payload.Schema != nil {
+			if parser.asyncAPI.Components.Schemas == nil {
+				parser.asyncAPI.Components.Schemas = make(map[string]*openapi.Schema)
+			}
 			parser.asyncAPI.Components.Schemas[msgKey] = msg.Payload.Schema
 			// Replace embedded schema with $ref
 			msg.Payload.Schema = nil

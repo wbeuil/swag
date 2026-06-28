@@ -98,8 +98,8 @@ type Pet5c struct {
 	Odd bool `json:"odd" binding:"required"`
 }
 
-// @testFunc a Func
-// @test2 das A
+//	@testFunc	a Func
+//	@test2		das A
 func testFunc() {
 
 }

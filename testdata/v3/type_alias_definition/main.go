@@ -1,4 +1,4 @@
 package main
 
-// @title Swagger Example API
-// @version 1.0
+//	@title		Swagger Example API
+//	@version	1.0
