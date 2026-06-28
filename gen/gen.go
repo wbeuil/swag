@@ -422,7 +422,12 @@ func (g *Gen) writeAsyncJSON(config *Config, spec interface{}) error {
 
 func (g *Gen) writeAsyncYAML(config *Config, spec interface{}) error {
 	asyncAPI := spec.(*asyncapi.AsyncAPI)
-	y, err := g.yamlMarshal(asyncAPI)
+	b, err := g.json(asyncAPI)
+	if err != nil {
+		return err
+	}
+
+	y, err := g.jsonToYAML(b)
 	if err != nil {
 		return err
 	}
