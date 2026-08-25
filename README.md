@@ -14,7 +14,7 @@
 [![Release](https://img.shields.io/github/release/swaggo/swag.svg?style=flat-square)](https://github.com/swaggo/swag/releases)
 
 
-Swag converts Go annotations to Swagger Documentation 2.0. We've created a variety of plugins for popular [Go web frameworks](#supported-web-frameworks). This allows you to quickly integrate with an existing Go project (using Swagger UI).
+Swag converts Go annotations to OpenAPI 3.2 documentation (Swagger 2.0 remains available via `--v2`). We've created a variety of plugins for popular [Go web frameworks](#supported-web-frameworks). This allows you to quickly integrate with an existing Go project (using Swagger UI).
 
 ## Contents
 - [swag](#swag)
@@ -28,7 +28,8 @@ Swag converts Go annotations to Swagger Documentation 2.0. We've created a varie
 - [Declarative Comments Format](#declarative-comments-format)
   - [General API Info](#general-api-info)
     - [Using markdown descriptions](#using-markdown-descriptions)
-  - [Open API V3.1.0+](#open-api-v310)
+  - [OpenAPI 3.2](#openapi-32)
+  - [AsyncAPI 3.1](#asyncapi-31)
   - [API Operation](#api-operation)
   - [Mime Types](#mime-types)
   - [Param Type](#param-type)
@@ -82,10 +83,12 @@ docker run --rm -v $(pwd):/code ghcr.io/swaggo/swag:latest
 
 Or download a pre-compiled binary from the [release page](https://github.com/swaggo/swag/releases).
 
-3. Run `swag init` in the project's root folder which contains the `main.go` file. This will parse your comments and generate the required files (`docs` folder and `docs/docs.go`).
+3. Run `swag init` in the project's root folder which contains the `main.go` file. This will parse your comments and generate the required files (`docs/openapi.json`, `docs/openapi.yaml`, and `docs/docs.go`).
 ```sh
 swag init
 ```
+
+  OpenAPI 3.2 is the default. Pass `--v2` to emit Swagger 2.0 instead. Pass `--async` to also emit `docs/asyncapi.json` and `docs/asyncapi.yaml`. Restrict OpenAPI artifacts with `--ot json,yaml` when you do not need `docs.go`.
 
   Make sure to import the generated `docs/docs.go` so that your specific configuration gets `init`'ed. If your General API annotations do not live in `main.go`, you can let swag know with `-g` flag.
   ```go
@@ -107,7 +110,7 @@ swag init
 swag init -h
 Swag version:  v2.0.0
 NAME:
-   swag init - Create docs.go
+   swag init - Generate OpenAPI 3.2 documentation
 
 USAGE:
    swag init [command options] [arguments...]
@@ -118,14 +121,16 @@ OPTIONS:
    --dir value, -d value                  Directories you want to parse,comma separated and general-info file must be in the first one (default: "./")
    --exclude value                        Exclude directories and files when searching, comma separated
    --propertyStrategy value, -p value     Property Naming Strategy like snakecase,camelcase,pascalcase (default: "camelcase")
-   --output value, -o value               Output directory for all the generated files(swagger.json, openapi.yaml and docs.go) (default: "./docs")
-   --outputTypes value, --ot value        Output types of generated files (docs.go, swagger.json, openapi.yaml) like go,json,yaml (default: "go,json,yaml")
+   --output value, -o value               Output directory for all the generated files (openapi.json, openapi.yaml and docs.go) (default: "./docs")
+   --outputTypes value, --ot value        Output types of generated files (docs.go, openapi.json, openapi.yaml) like go,json,yaml (default: "go,json,yaml")
    --parseVendor                          Parse go files in 'vendor' folder, disabled by default (default: false)
-   --parseDependency, --pd                Parse go files inside dependency folder, disabled by default (default: false)
-   --parseDependencyLevel, --pdl          Enhancement of '--parseDependency', parse go files inside dependency folder, 0 disabled, 1 only parse models, 2 only parse operations, 3 parse all (default: 0)
+   --parseDependency, --pd                Parse go files inside dependency folder (default: true)
+   --parseDependencyLevel, --pdl          Parse go files inside dependency folder, 0 disabled, 1 only parse models, 2 only parse operations, 3 parse all (default: 0)
+   --no-parseDependency                   Disable parsing go files inside dependency folder
    --markdownFiles value, --md value      Parse folder containing markdown files to use as description, disabled by default
    --codeExampleFiles value, --cef value  Parse folder containing code example files to use for the x-codeSamples extension, disabled by default
-   --parseInternal                        Parse go files in internal packages, disabled by default (default: false)
+   --parseInternal                        Parse go files in internal packages (default: true)
+   --no-parseInternal                     Disable parsing go files in internal packages
    --generatedTime                        Generate timestamp at the top of docs.go, disabled by default (default: false)
    --parseDepth value                     Dependency parse depth (default: 100)
    --requiredByDefault                    Set validation required for all fields by default (default: false)
@@ -134,13 +139,15 @@ OPTIONS:
    --parseGoList                          Parse dependency via 'go list' (default: true)
    --parseExtension value                 Parse only those operations that match given extension
    --tags value, -t value                 A comma-separated list of tags to filter the APIs for which the documentation is generated.Special case if the tag is prefixed with the '!' character then the APIs with that tag will be excluded
-   --v3.1                                 Generate OpenAPI V3.1 spec (default: false)
+   --v2                                   Generate Swagger 2.0 spec instead of OpenAPI 3.2 (default: false)
+   --async, --generateAsyncAPI            Generate AsyncAPI 3.1 spec alongside OpenAPI (default: false)
+   --asyncOutputTypes value               Output types of generated AsyncAPI files (asyncapi.json, asyncapi.yaml) like json,yaml (default: "json,yaml")
    --templateDelims value, --td value     Provide custom delimeters for Go template generation. The format is leftDelim,rightDelim. For example: "[[,]]"
    --collectionFormat value, --cf value   Set default collection format (default: "csv")
    --state value                          Initial state for the state machine (default: ""), @HostState in root file, @State in other files
    --parseFuncBody                        Parse API info within body of functions in go files, disabled by default (default: false)
-   --packageName --output                 A package name of docs.go, using output directory name by default (check --output option)
-   --collectionFormat value, --cf value   Set default collection format (default: "csv")
+   --useStructName, --st                  Use struct name instead of full-path names when using dependency flag (default: true)
+   --no-useStructName                     Disable using struct name instead of full-path names
    --help, -h                             show help
 ```
 
@@ -444,14 +451,32 @@ When a short string in your documentation is insufficient, or you need images, c
 | tag.name    | Name of a tag.| // @tag.name This is the name of the tag                     |
 | tag.description.markdown   | Description of the tag this is an alternative to tag.description. The description will be read from a file named like tagname.md  | // @tag.description.markdown         |
 
-## Open API V3.1.0+
+## OpenAPI 3.2
 
-The following annotations are only available if you set the -v3.1 flag in the CLI.
+OpenAPI 3.2 is the default dialect. The following annotations are available without extra flags. Pass `--v2` to generate Swagger 2.0 instead.
 
 | annotation  | description                                | example                         |
 |-------------|--------------------------------------------|---------------------------------|
 | servers.url       | The URL of a server| // @servers.url https://petstore.example.com/api/v1   |
 | servers.description       | The description of a server| // @servers.description Production API   |
+| webhook     | Document a webhook the **API provider** may send to its consumers. `@webhook name [method]` emits a top-level `webhooks` entry, not a `paths` URL. Incoming HTTP endpoints implemented by this service still use `@router`. | // @webhook orderUpdated [post] |
+
+## AsyncAPI 3.1
+
+Pass `--async` (or `--generateAsyncAPI`) to emit `asyncapi.json` and `asyncapi.yaml` next to the OpenAPI artifacts. General info lives on the main file; each operation is a function whose comments include `@asyncapi`.
+
+| annotation | description | example |
+|------------|-------------|---------|
+| asyncTitle | Document title | `// @asyncTitle Email jobs` |
+| asyncVersion | Document version | `// @asyncVersion 1.0.0` |
+| asyncServer.name / host / protocol | Broker server | `// @asyncServer.protocol sqs` |
+| asyncServer.binding.<protocol> | Generic server binding object (JSON or dotted fields) | `// @asyncServer.binding.sqs {"bindingVersion":"0.3.0"}` |
+| asyncChannel / asyncChannel.address | Channel name and address | `// @asyncChannel.address email` |
+| asyncOperation / asyncAction | Operation id and `send` / `receive` | `// @asyncAction receive` |
+| asyncMessage | Payload type (`{object} TypeName`) | `// @asyncMessage {object} EmailJob "job"` |
+| asyncMessage.name | Stable component name; required for primitive payloads | `// @asyncMessage.name EmailJob` |
+| asyncBinding.<target>.<protocol> | Generic binding on `server`, `channel`, `operation`, or `message`. Omit target to bind the operation. Value is JSON or a dotted scalar. Protocol objects are stored as-is; this generator does not hard-code SQS. | `// @asyncBinding.channel.sqs {"queue":{"name":"email"}}` |
+| asyncx-* | Operation extension; JSON value | `// @asyncx-owner {"team":"platform"}` |
 
 ## API Operation
 
@@ -475,6 +500,7 @@ The following annotations are only available if you set the -v3.1 flag in the CL
 | response             | As same as `success` and `failure`                                                                                                                                                                |
 | header               | Header in response that separated by spaces. `return code`,`{param type}`,`data type`,`comment`                                                                                                   |
 | router               | Path definition that separated by spaces. `path`,`[httpMethod]`                                                                                                                                   |
+| webhook              | Webhook the API provider may initiate. `name`,`[httpMethod]`. Appears under `webhooks`, not `paths`.                                                                                               |
 | deprecatedrouter     | As same as router, but deprecated.                                                                                                                                                     |
 | x-name               | The extension key, must be start by x- and take only json value.                                                                                                                                  |
 | x-codeSample         | Optional Markdown usage. take `file` as parameter. This will then search for a file named like the summary in the given folder.                                                                   |

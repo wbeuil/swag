@@ -549,7 +549,11 @@ func (p *Parser) ParseRouterAPIInfoV3(fileInfo *AstFileInfo) error {
 			}
 
 			if isAsync {
-				return p.parseAsyncAPIInfoComment(astDeclaration.Doc.List, fileInfo)
+				if err := p.parseAsyncAPIInfoComment(astDeclaration.Doc.List, fileInfo); err != nil {
+					return err
+				}
+
+				continue
 			}
 
 			// for per 'function' comment, create a new 'Operation' object

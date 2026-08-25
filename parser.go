@@ -18,6 +18,8 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"unicode"
+	"unicode/utf8"
 
 	"github.com/KyleBanks/depth"
 	"github.com/go-openapi/spec"
@@ -1309,7 +1311,11 @@ func processAsyncOperation(parser *Parser, asyncOp *AsyncOperation) error {
 	// Register messages and their schemas
 	for _, msg := range asyncOp.Messages {
 		if msg.Name == "" {
-			continue
+			if asyncOp.ChannelName != "" {
+				msg.Name = asyncOp.ChannelName + "Payload"
+			} else {
+				msg.Name = "payload"
+			}
 		}
 		msgKey := msg.Name
 		if parser.asyncAPI.Components == nil {
@@ -1320,15 +1326,22 @@ func processAsyncOperation(parser *Parser, asyncOp *AsyncOperation) error {
 		}
 		parser.asyncAPI.Components.Messages[msgKey] = msg
 
-		// Register schema in components if payload exists
-		if msg.Payload != nil && msg.Payload.Schema != nil {
+		if msg.Payload != nil && msg.Payload.Ref != "" {
+			refName := strings.TrimPrefix(msg.Payload.Ref, "#/components/schemas/")
+			if schema := copyOpenAPISchema(parser, refName); schema != nil {
+				if parser.asyncAPI.Components.Schemas == nil {
+					parser.asyncAPI.Components.Schemas = make(map[string]*openapi.Schema)
+				}
+				parser.asyncAPI.Components.Schemas[msgKey] = schema
+			}
+			msg.Payload.Ref = "#/components/schemas/" + msgKey
+		} else if msg.Payload != nil && msg.Payload.Schema != nil {
 			if parser.asyncAPI.Components.Schemas == nil {
 				parser.asyncAPI.Components.Schemas = make(map[string]*openapi.Schema)
 			}
 			parser.asyncAPI.Components.Schemas[msgKey] = msg.Payload.Schema
-			// Replace embedded schema with $ref
+			msg.Payload.Ref = "#/components/schemas/" + msgKey
 			msg.Payload.Schema = nil
-			msg.Payload.SchemaFormat = "application/vnd.aai.asyncapi+json;version=3.1.0"
 		}
 
 		// Link channel to messages
@@ -1353,17 +1366,82 @@ func processAsyncOperation(parser *Parser, asyncOp *AsyncOperation) error {
 	// Register server
 	if asyncOp.Server != nil && asyncOp.ServerName != "" {
 		parser.asyncServers[asyncOp.ServerName] = asyncOp.Server
-		parser.asyncAPI.Servers[asyncOp.ServerName] = asyncOp.Server
+		if existing, ok := parser.asyncAPI.Servers[asyncOp.ServerName]; ok {
+			mergeServer(existing, asyncOp.Server)
+		} else {
+			parser.asyncAPI.Servers[asyncOp.ServerName] = asyncOp.Server
+		}
+	} else if asyncOp.Server != nil && len(asyncOp.Server.Bindings) > 0 {
+		for _, server := range parser.asyncAPI.Servers {
+			if server.Bindings == nil {
+				server.Bindings = make(map[string]interface{})
+			}
+			mergeBindings(server.Bindings, asyncOp.Server.Bindings)
+		}
 	}
 
 	return nil
+}
+
+func mergeServer(dst, src *asyncapi.Server) {
+	if src.Host != "" {
+		dst.Host = src.Host
+	}
+	if src.Protocol != "" {
+		dst.Protocol = src.Protocol
+	}
+	if src.ProtocolVersion != "" {
+		dst.ProtocolVersion = src.ProtocolVersion
+	}
+	if src.PathName != "" {
+		dst.PathName = src.PathName
+	}
+	if src.Description != "" {
+		dst.Description = src.Description
+	}
+	if src.Title != "" {
+		dst.Title = src.Title
+	}
+	if len(src.Bindings) > 0 {
+		if dst.Bindings == nil {
+			dst.Bindings = make(map[string]interface{})
+		}
+		mergeBindings(dst.Bindings, src.Bindings)
+	}
+}
+
+func mergeBindings(dst, src map[string]interface{}) {
+	for protocol, value := range src {
+		srcObj, srcIsObj := value.(map[string]interface{})
+		dstObj, dstIsObj := dst[protocol].(map[string]interface{})
+		if srcIsObj && dstIsObj {
+			for key, nested := range srcObj {
+				dstObj[key] = nested
+			}
+			continue
+		}
+		if srcIsObj && !dstIsObj {
+			copied := make(map[string]interface{}, len(srcObj))
+			for key, nested := range srcObj {
+				copied[key] = nested
+			}
+			dst[protocol] = copied
+			continue
+		}
+		dst[protocol] = value
+	}
 }
 
 func generateAsyncOperationID(channelName, action string) string {
 	if channelName == "" {
 		return action + "Operation"
 	}
-	return action + strings.Title(channelName)
+	r, size := utf8.DecodeRuneInString(channelName)
+	if r == utf8.RuneError {
+		return action + channelName
+	}
+
+	return action + string(unicode.ToUpper(r)) + channelName[size:]
 }
 
 func refRouteMethodOp(item *spec.PathItem, method string) (op **spec.Operation) {
@@ -2209,7 +2287,43 @@ func (parser *Parser) GetSwagger() *spec.Swagger {
 
 // GetAsyncAPI returns *asyncapi.AsyncAPI which is the root document object for the AsyncAPI specification.
 func (parser *Parser) GetAsyncAPI() *asyncapi.AsyncAPI {
+	parser.copyOpenAPISchemasToAsyncAPI()
 	return parser.asyncAPI
+}
+
+func (parser *Parser) copyOpenAPISchemasToAsyncAPI() {
+	if parser.asyncAPI == nil || parser.openAPI == nil || parser.openAPI.Components == nil || parser.openAPI.Components.Spec == nil {
+		return
+	}
+	if parser.asyncAPI.Components == nil {
+		parser.asyncAPI.Components = &asyncapi.Components{}
+	}
+	if parser.asyncAPI.Components.Schemas == nil {
+		parser.asyncAPI.Components.Schemas = make(map[string]*openapi.Schema)
+	}
+	for name, schema := range parser.openAPI.Components.Spec.Schemas {
+		if schema == nil || schema.Spec == nil {
+			continue
+		}
+		if _, exists := parser.asyncAPI.Components.Schemas[name]; exists {
+			continue
+		}
+		copied := *schema.Spec
+		parser.asyncAPI.Components.Schemas[name] = &copied
+	}
+}
+
+func copyOpenAPISchema(parser *Parser, name string) *openapi.Schema {
+	if parser.openAPI == nil || parser.openAPI.Components == nil || parser.openAPI.Components.Spec == nil {
+		return nil
+	}
+	schema, ok := parser.openAPI.Components.Spec.Schemas[name]
+	if !ok || schema == nil || schema.Spec == nil {
+		return nil
+	}
+	copied := *schema.Spec
+
+	return &copied
 }
 
 // addTestType just for tests.

@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	openapi "github.com/wbeuil/openapi"
 )
 
@@ -118,6 +119,24 @@ func TestAsyncOperation_ParseMessageComment(t *testing.T) {
 		assert.Equal(t, "UserEvent", ao.Messages[0].Name)
 		assert.Equal(t, "A user event", ao.Messages[0].Description)
 	})
+}
+
+func TestAsyncOperation_ParseBindingComment(t *testing.T) {
+	t.Parallel()
+
+	ao := NewAsyncOperation(New())
+
+	require.NoError(t, ao.ParseComment(`// @asyncBinding.channel.sqs {"queue":{"name":"email"},"bindingVersion":"0.3.0"}`, nil))
+	require.Contains(t, ao.Channel.Bindings, "sqs")
+	sqs := ao.Channel.Bindings["sqs"].(map[string]interface{})
+	assert.Equal(t, "0.3.0", sqs["bindingVersion"])
+	assert.Equal(t, "email", sqs["queue"].(map[string]interface{})["name"])
+
+	require.NoError(t, ao.ParseComment("// @asyncBinding.kafka.groupId my-group", nil))
+	assert.Equal(t, "my-group", ao.Operation.Bindings["kafka"].(map[string]interface{})["groupId"])
+
+	require.NoError(t, ao.ParseComment("// @asyncx-owner {\"team\":\"platform\"}", nil))
+	assert.Equal(t, map[string]interface{}{"team": "platform"}, ao.Operation.Extensions["x-owner"])
 }
 
 func TestGenerateAsyncOperationID(t *testing.T) {

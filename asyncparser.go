@@ -84,10 +84,39 @@ func (parser *Parser) parseGeneralAsyncAPIInfo(comments []string) error {
 				parser.asyncAPI.ExternalDocs = &asyncapi.ExternalDocs{}
 			}
 			parser.asyncAPI.ExternalDocs.URL = value
+		default:
+			if currentServerName != "" {
+				if rest, ok := trimAttrPrefix(attribute, "@asyncserver.binding"); ok {
+					protocol := rest
+					fieldPath := []string(nil)
+					if idx := strings.Index(rest, "."); idx >= 0 {
+						protocol = rest[:idx]
+						if rest[idx+1:] != "" {
+							fieldPath = strings.Split(rest[idx+1:], ".")
+						}
+					}
+					bindingValue, err := parseBindingValue(value)
+					if err != nil {
+						return err
+					}
+					if err := assignBinding(parser.serverBindingMap(currentServerName), protocol, fieldPath, bindingValue); err != nil {
+						return err
+					}
+				}
+			}
 		}
 
 		previousAttribute = attribute
 	}
 
 	return nil
+}
+
+func (parser *Parser) serverBindingMap(name string) map[string]interface{} {
+	server := parser.asyncAPI.Servers[name]
+	if server.Bindings == nil {
+		server.Bindings = make(map[string]interface{})
+	}
+
+	return server.Bindings
 }

@@ -52,7 +52,45 @@ func TestParser_ParseAsyncAPIInfo(t *testing.T) {
 	assert.Equal(t, "UserEvent", msg.Name)
 	assert.Equal(t, "A user event message", msg.Description)
 	require.NotNil(t, msg.Payload)
+	assert.Equal(t, "#/components/schemas/UserEvent", msg.Payload.Ref)
 
 	// Schemas
 	require.Contains(t, asyncAPI.Components.Schemas, "UserEvent")
+}
+
+func TestParser_ParseAsyncAPIComplete(t *testing.T) {
+	t.Parallel()
+
+	searchDir := "testdata/asyncapi/complete"
+	p := New(SetParseDependency(ParseModels), GenerateOpenAPI3Doc(true))
+
+	err := p.ParseAPIMultiSearchDir([]string{searchDir}, "main.go", defaultParseDepth)
+	require.NoError(t, err)
+
+	asyncAPI := p.GetAsyncAPI()
+	require.NotNil(t, asyncAPI)
+
+	require.Contains(t, asyncAPI.Operations, "receiveEmail")
+	require.Contains(t, asyncAPI.Operations, "sendNotification")
+
+	email := asyncAPI.Channels["email"]
+	require.NotNil(t, email)
+	assert.Equal(t, "email", email.Address)
+	require.Contains(t, email.Bindings, "sqs")
+	sqs, ok := email.Bindings["sqs"].(map[string]interface{})
+	require.True(t, ok)
+	assert.Equal(t, "0.3.0", sqs["bindingVersion"])
+
+	dev := asyncAPI.Servers["development"]
+	require.NotNil(t, dev)
+	require.Contains(t, dev.Bindings, "sqs")
+
+	require.Contains(t, asyncAPI.Components.Messages, "EmailJob")
+	require.Contains(t, asyncAPI.Components.Messages, "NotificationPayload")
+	assert.Equal(t, "#/components/schemas/EmailJob", asyncAPI.Components.Messages["EmailJob"].Payload.Ref)
+	assert.Equal(t, "#/components/schemas/NotificationPayload", asyncAPI.Components.Messages["NotificationPayload"].Payload.Ref)
+	require.Contains(t, asyncAPI.Components.Schemas, "EmailJob")
+	require.Contains(t, asyncAPI.Components.Schemas, "NotificationPayload")
+
+	assert.Equal(t, map[string]interface{}{"team": "platform"}, asyncAPI.Operations["receiveEmail"].Extensions["x-owner"])
 }

@@ -23,7 +23,6 @@ import (
 	"github.com/swaggo/swag/v2/asyncapi"
 	"golang.org/x/text/cases"
 	"golang.org/x/text/language"
-	yaml "gopkg.in/yaml.v3"
 	sigyaml "sigs.k8s.io/yaml"
 )
 
@@ -39,7 +38,6 @@ type Gen struct {
 	json               func(data interface{}) ([]byte, error)
 	jsonIndent         func(data interface{}) ([]byte, error)
 	jsonToYAML         func(data []byte) ([]byte, error)
-	yamlMarshal        func(data interface{}) ([]byte, error)
 	outputTypeMap      map[string]genTypeWriter
 	asyncOutputTypeMap map[string]genTypeWriter
 	debug              Debugger
@@ -60,9 +58,8 @@ func New() *Gen {
 		jsonIndent: func(data interface{}) ([]byte, error) {
 			return json.MarshalIndent(data, "", "    ")
 		},
-		jsonToYAML:  sigyaml.JSONToYAML,
-		yamlMarshal: yaml.Marshal,
-		debug:       log.New(os.Stdout, "", log.LstdFlags),
+		jsonToYAML: sigyaml.JSONToYAML,
+		debug:      log.New(os.Stdout, "", log.LstdFlags),
 	}
 
 	gen.outputTypeMap = map[string]genTypeWriter{
@@ -152,7 +149,7 @@ type Config struct {
 	// RightTemplateDelim defines the right delimiter for the template generation
 	RightTemplateDelim string
 
-	// GenerateOpenAPI3Doc if true, OpenAPI V3.1 spec will be generated
+	// GenerateOpenAPI3Doc if true, OpenAPI 3.2 spec will be generated
 	GenerateOpenAPI3Doc bool
 
 	// PackageName defines package name of generated `docs.go`
@@ -393,7 +390,12 @@ func (g *Gen) writeYAML(config *Config, swagger interface{}) error {
 
 	yamlFileName := path.Join(config.OutputDir, filename)
 
-	y, err := g.yamlMarshal(swagger)
+	b, err := g.json(swagger)
+	if err != nil {
+		return err
+	}
+
+	y, err := g.jsonToYAML(b)
 	if err != nil {
 		return fmt.Errorf("cannot marshal to yaml error: %s", err)
 	}

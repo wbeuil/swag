@@ -17,6 +17,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/swaggo/swag/v2"
+	sigyaml "sigs.k8s.io/yaml"
 )
 
 const searchDir = "../testdata/simple"
@@ -347,7 +348,7 @@ func TestGen_jsonToYAML(t *testing.T) {
 	}
 
 	gen := New()
-	gen.yamlMarshal = func(data interface{}) ([]byte, error) {
+	gen.jsonToYAML = func(data []byte) ([]byte, error) {
 		return nil, errors.New("fail")
 	}
 	assert.Error(t, gen.Build(config))
@@ -935,4 +936,61 @@ func TestGen_StateUser(t *testing.T) {
 	require.NoError(t, err)
 
 	assert.JSONEq(t, string(expectedJSON), string(jsonOutput))
+}
+
+func TestGen_BuildOpenAPI32AndAsyncAPI(t *testing.T) {
+	outputDir := t.TempDir()
+	config := &Config{
+		SearchDir:           "../testdata/asyncapi/complete",
+		MainAPIFile:         "./main.go",
+		OutputDir:           outputDir,
+		OutputTypes:         []string{"json", "yaml"},
+		GenerateOpenAPI3Doc: true,
+		GenerateAsyncAPIDoc: true,
+		AsyncOutputTypes:    []string{"json", "yaml"},
+		ParseInternal:       true,
+	}
+	require.NoError(t, New().Build(config))
+
+	openAPIJSON, err := os.ReadFile(filepath.Join(outputDir, "openapi.json"))
+	require.NoError(t, err)
+	var openAPI map[string]interface{}
+	require.NoError(t, json.Unmarshal(openAPIJSON, &openAPI))
+	assert.Equal(t, "3.2.0", openAPI["openapi"])
+
+	openAPIYAML, err := os.ReadFile(filepath.Join(outputDir, "openapi.yaml"))
+	require.NoError(t, err)
+	fromYAML, err := sigyaml.YAMLToJSON(openAPIYAML)
+	require.NoError(t, err)
+	assert.JSONEq(t, string(openAPIJSON), string(fromYAML))
+
+	asyncJSON, err := os.ReadFile(filepath.Join(outputDir, "asyncapi.json"))
+	require.NoError(t, err)
+	var asyncAPI map[string]interface{}
+	require.NoError(t, json.Unmarshal(asyncJSON, &asyncAPI))
+	assert.Equal(t, "3.1.0", asyncAPI["asyncapi"])
+
+	operations, ok := asyncAPI["operations"].(map[string]interface{})
+	require.True(t, ok)
+	assert.Contains(t, operations, "receiveEmail")
+	assert.Contains(t, operations, "sendNotification")
+	assert.Contains(t, operations["receiveEmail"].(map[string]interface{}), "x-owner")
+
+	channels := asyncAPI["channels"].(map[string]interface{})
+	email := channels["email"].(map[string]interface{})
+	assert.Equal(t, "email", email["address"])
+	assert.Contains(t, email["bindings"].(map[string]interface{}), "sqs")
+
+	components := asyncAPI["components"].(map[string]interface{})
+	messages := components["messages"].(map[string]interface{})
+	assert.Contains(t, messages, "EmailJob")
+	assert.Contains(t, messages, "NotificationPayload")
+	emailJob := messages["EmailJob"].(map[string]interface{})
+	assert.Equal(t, "#/components/schemas/EmailJob", emailJob["payload"].(map[string]interface{})["$ref"])
+
+	asyncYAML, err := os.ReadFile(filepath.Join(outputDir, "asyncapi.yaml"))
+	require.NoError(t, err)
+	asyncFromYAML, err := sigyaml.YAMLToJSON(asyncYAML)
+	require.NoError(t, err)
+	assert.JSONEq(t, string(asyncJSON), string(asyncFromYAML))
 }

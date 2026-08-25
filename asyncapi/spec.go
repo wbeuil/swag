@@ -102,6 +102,29 @@ type Operation struct {
 	Reply        *OperationReply        `json:"reply,omitempty"`
 	Bindings     map[string]interface{} `json:"bindings,omitempty"`
 	ExternalDocs *ExternalDocs          `json:"externalDocs,omitempty"`
+	Extensions   map[string]interface{} `json:"-"`
+}
+
+// MarshalJSON emits specification fields plus x-* extensions.
+func (o Operation) MarshalJSON() ([]byte, error) {
+	type alias Operation
+	b, err := json.Marshal(alias(o))
+	if err != nil {
+		return nil, err
+	}
+	if len(o.Extensions) == 0 {
+		return b, nil
+	}
+
+	var fields map[string]interface{}
+	if err := json.Unmarshal(b, &fields); err != nil {
+		return nil, err
+	}
+	for key, value := range o.Extensions {
+		fields[key] = value
+	}
+
+	return json.Marshal(fields)
 }
 
 // OperationTrait is a reusable trait for an Operation.
@@ -242,6 +265,7 @@ type CorrelationID struct {
 
 // MultiFormatSchema allows the use of different schema formats.
 type MultiFormatSchema struct {
+	Ref          string          `json:"$ref,omitempty"`
 	Schema       *openapi.Schema `json:"schema,omitempty"`
 	SchemaFormat string          `json:"schemaFormat,omitempty"`
 }
