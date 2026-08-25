@@ -129,7 +129,7 @@ OPTIONS:
    --no-parseDependency                   Disable parsing go files inside dependency folder
    --markdownFiles value, --md value      Parse folder containing markdown files to use as description, disabled by default
    --codeExampleFiles value, --cef value  Parse folder containing code example files to use for the x-codeSamples extension, disabled by default
-   --parseInternal                        Parse go files in internal packages (default: true)
+   --parseInternal                        Parse go files in internal packages; stdlib is never parsed (default: true)
    --no-parseInternal                     Disable parsing go files in internal packages
    --generatedTime                        Generate timestamp at the top of docs.go, disabled by default (default: false)
    --parseDepth value                     Dependency parse depth (default: 100)
@@ -1049,7 +1049,7 @@ The new delimiter is a string with the format "`<left delimiter>`,`<right delimi
 
 If the struct is defined in a dependency package, use `--parseDependency`.
 
-If the struct is defined in your main project, use `--parseInternal`.
+If the struct is defined in a Go `internal/` package, use `--parseInternal` (enabled by default in v2). Standard-library packages are never parsed, even when `--parseInternal` is set — otherwise types like `os/user.User` collide with application types that share a package name.
 
 if you want to include both internal and from dependencies use both flags
 ```

@@ -4283,6 +4283,23 @@ func TestParser_collectionFormat(t *testing.T) {
 	}
 }
 
+func TestParser_skipStdlibAndInternalDeps(t *testing.T) {
+	t.Parallel()
+
+	parser := New()
+	parser.ParseInternal = true
+	assert.True(t, parser.skipStdlibAndInternalDeps(true, "os/user"))
+	assert.False(t, parser.skipStdlibAndInternalDeps(false, "github.com/example/internal/user"))
+	assert.False(t, parser.skipStdlibAndInternalDeps(false, "github.com/example/pkg"))
+
+	parser.ParseInternal = false
+	assert.True(t, parser.skipStdlibAndInternalDeps(true, "os/user"))
+	assert.True(t, parser.skipStdlibAndInternalDeps(false, "internal"))
+	assert.True(t, parser.skipStdlibAndInternalDeps(false, "internal/foo"))
+	assert.True(t, parser.skipStdlibAndInternalDeps(false, "github.com/example/internal/user"))
+	assert.False(t, parser.skipStdlibAndInternalDeps(false, "github.com/example/pkg"))
+}
+
 func TestParser_skipPackageByPrefix(t *testing.T) {
 	t.Parallel()
 

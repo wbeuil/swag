@@ -466,6 +466,30 @@ func (parser *Parser) ParseAPI(searchDir string, mainAPIFile string, parseDepth 
 	return parser.ParseAPIMultiSearchDir([]string{searchDir}, mainAPIFile, parseDepth)
 }
 
+// skipStdlibAndInternalDeps reports whether a dependency package should be
+// skipped. Standard-library packages are never parsed: they collide with
+// application types that share a package name (for example os/user.User vs
+// an application's user.User). Go internal packages are skipped unless
+// ParseInternal is set.
+func (parser *Parser) skipStdlibAndInternalDeps(stdlib bool, importPath string) bool {
+	if stdlib {
+		return true
+	}
+	if parser.ParseInternal {
+		return false
+	}
+
+	return isGoInternalImportPath(importPath)
+}
+
+func isGoInternalImportPath(importPath string) bool {
+	if importPath == "internal" || strings.HasPrefix(importPath, "internal/") {
+		return true
+	}
+
+	return strings.Contains(importPath, "/internal/")
+}
+
 // skipPackageByPrefix returns true the given pkgpath does not match
 // any user-defined package path prefixes.
 func (parser *Parser) skipPackageByPrefix(pkgpath string) bool {
@@ -2168,8 +2192,16 @@ func (parser *Parser) getAllGoFileInfo(packageDir, searchDir string) error {
 }
 
 func (parser *Parser) getAllGoFileInfoFromDeps(pkg *depth.Pkg, parseFlag ParseFlag) error {
-	ignoreInternal := pkg.Internal && !parser.ParseInternal
-	if ignoreInternal || !pkg.Resolved { // ignored internal and not resolved dependencies
+	if !pkg.Resolved { // not resolved dependencies
+		return nil
+	}
+
+	importPath := ""
+	if pkg.Raw != nil {
+		importPath = pkg.Raw.ImportPath
+	}
+	// pkg.Internal means GOROOT/stdlib in github.com/KyleBanks/depth.
+	if parser.skipStdlibAndInternalDeps(pkg.Internal, importPath) {
 		return nil
 	}
 

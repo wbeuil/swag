@@ -48,8 +48,7 @@ func listPackages(ctx context.Context, dir string, env []string, args ...string)
 }
 
 func (parser *Parser) getAllGoFileInfoFromDepsByList(pkg *build.Package, parseFlag ParseFlag) error {
-	ignoreInternal := pkg.Goroot && !parser.ParseInternal
-	if ignoreInternal { // ignored internal
+	if parser.skipStdlibAndInternalDeps(pkg.Goroot, pkg.ImportPath) {
 		return nil
 	}
 

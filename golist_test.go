@@ -82,6 +82,16 @@ func TestGetAllGoFileInfoFromDepsByList(t *testing.T) {
 			except:         nil,
 		},
 		{
+			name: "never parse GOROOT even when ParseInternal is true",
+			buildPackage: &build.Package{
+				Goroot:     true,
+				ImportPath: "os/user",
+				Dir:        "testdata/golist_not_exist",
+				GoFiles:    []string{"main.go"},
+			},
+			except: nil,
+		},
+		{
 			name: "gofiles error",
 			buildPackage: &build.Package{
 				Dir:     "testdata/golist_not_exist",
@@ -101,6 +111,7 @@ func TestGetAllGoFileInfoFromDepsByList(t *testing.T) {
 
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
+			p.ParseInternal = true
 			if c.ignoreInternal {
 				p.ParseInternal = false
 			}

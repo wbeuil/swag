@@ -126,7 +126,7 @@ var initFlags = []cli.Flag{
 	&cli.BoolFlag{
 		Name:  parseInternalFlag,
 		Value: true,
-		Usage: "Parse go files in internal packages",
+		Usage: "Parse go files in internal packages; standard-library packages are never parsed",
 	},
 	&cli.BoolFlag{
 		Name:  noParseInternalFlag,
