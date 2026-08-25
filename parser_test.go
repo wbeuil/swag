@@ -4289,6 +4289,9 @@ func TestParser_skipStdlibAndInternalDeps(t *testing.T) {
 	parser := New()
 	parser.ParseInternal = true
 	assert.True(t, parser.skipStdlibAndInternalDeps(true, "os/user"))
+	assert.True(t, parser.skipStdlibAndInternalDeps(false, "os/user"))
+	assert.True(t, parser.skipStdlibAndInternalDeps(false, "net/http"))
+	assert.True(t, parser.skipStdlibAndInternalDeps(false, "internal/goarch"))
 	assert.False(t, parser.skipStdlibAndInternalDeps(false, "github.com/example/internal/user"))
 	assert.False(t, parser.skipStdlibAndInternalDeps(false, "github.com/example/pkg"))
 

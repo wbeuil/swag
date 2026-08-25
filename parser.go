@@ -472,7 +472,7 @@ func (parser *Parser) ParseAPI(searchDir string, mainAPIFile string, parseDepth 
 // an application's user.User). Go internal packages are skipped unless
 // ParseInternal is set.
 func (parser *Parser) skipStdlibAndInternalDeps(stdlib bool, importPath string) bool {
-	if stdlib {
+	if stdlib || isStandardLibraryImportPath(importPath) {
 		return true
 	}
 	if parser.ParseInternal {
@@ -480,6 +480,18 @@ func (parser *Parser) skipStdlibAndInternalDeps(stdlib bool, importPath string) 
 	}
 
 	return isGoInternalImportPath(importPath)
+}
+
+func isStandardLibraryImportPath(importPath string) bool {
+	if importPath == "" {
+		return false
+	}
+	if importPath == "C" {
+		return true
+	}
+	first, _, _ := strings.Cut(importPath, "/")
+
+	return !strings.Contains(first, ".")
 }
 
 func isGoInternalImportPath(importPath string) bool {

@@ -578,7 +578,7 @@ func (pkgDefs *PackagesDefinitions) FindTypeSpec(typeName string, file *ast.File
 		pkgPaths, externalPkgPaths := pkgDefs.findPackagePathFromImports(parts[0], file)
 		if len(externalPkgPaths) == 0 || pkgDefs.parseDependency == ParseNone {
 			typeDef, ok := pkgDefs.uniqueDefinitions[typeName]
-			if ok {
+			if ok && typeDef != nil {
 				return typeDef
 			}
 		}
