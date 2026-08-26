@@ -22,12 +22,14 @@ type AsyncAPI struct {
 
 // Info provides metadata about the API.
 type Info struct {
-	Title          string   `json:"title,omitempty"`
-	Version        string   `json:"version,omitempty"`
-	Description    string   `json:"description,omitempty"`
-	TermsOfService string   `json:"termsOfService,omitempty"`
-	Contact        *Contact `json:"contact,omitempty"`
-	License        *License `json:"license,omitempty"`
+	Title          string        `json:"title,omitempty"`
+	Version        string        `json:"version,omitempty"`
+	Description    string        `json:"description,omitempty"`
+	TermsOfService string        `json:"termsOfService,omitempty"`
+	Contact        *Contact      `json:"contact,omitempty"`
+	License        *License      `json:"license,omitempty"`
+	Tags           []*Tag        `json:"tags,omitempty"`
+	ExternalDocs   *ExternalDocs `json:"externalDocs,omitempty"`
 }
 
 // Contact information for the exposed API.
@@ -73,6 +75,7 @@ type Channel struct {
 	Address     string                 `json:"address,omitempty"`
 	Messages    map[string]*Message    `json:"messages,omitempty"`
 	Title       string                 `json:"title,omitempty"`
+	Summary     string                 `json:"summary,omitempty"`
 	Description string                 `json:"description,omitempty"`
 	Parameters  map[string]*Parameter  `json:"parameters,omitempty"`
 	Tags        []*Tag                 `json:"tags,omitempty"`

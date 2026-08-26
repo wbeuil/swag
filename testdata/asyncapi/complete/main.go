@@ -33,9 +33,27 @@ func consumeEmail() {}
 // @asyncMessage.name	NotificationPayload
 func publishNotification() {}
 
+// GetPet is an HTTP-only handler whose model must not leak into AsyncAPI.
+//
+//	@Summary	Get a pet
+//	@Success	200	{object}	Pet
+//	@Router		/pet [get]
+func getPet() {}
+
+// Pet is an OpenAPI-only model.
+type Pet struct {
+	Name string `json:"name"`
+}
+
 // EmailJob is the SQS email payload.
 type EmailJob struct {
 	ToAddress    string            `json:"toAddress"`
 	TemplateType string            `json:"templateType"`
 	Data         map[string]string `json:"data"`
+	Recipient    Recipient         `json:"recipient"`
+}
+
+// Recipient is nested from EmailJob and should be copied into AsyncAPI.
+type Recipient struct {
+	Email string `json:"email"`
 }

@@ -83,6 +83,10 @@ const (
 	asyncTitleAttr              = "@asynctitle"
 	asyncVersionAttr            = "@asyncversion"
 	asyncDescriptionAttr        = "@asyncdescription"
+	asyncIdAttr                 = "@asyncid"
+	asyncContactNameAttr        = "@asynccontact.name"
+	asyncContactURLAttr         = "@asynccontact.url"
+	asyncContactEmailAttr       = "@asynccontact.email"
 	asyncLicenseNameAttr        = "@asynclicense.name"
 	asyncLicenseURLAttr         = "@asynclicense.url"
 	asyncDefaultContentTypeAttr = "@asyncdefaultcontenttype"
@@ -2336,7 +2340,7 @@ func (parser *Parser) GetAsyncAPI() *asyncapi.AsyncAPI {
 }
 
 func (parser *Parser) copyOpenAPISchemasToAsyncAPI() {
-	if parser.asyncAPI == nil || parser.openAPI == nil || parser.openAPI.Components == nil || parser.openAPI.Components.Spec == nil {
+	if parser.asyncAPI == nil {
 		return
 	}
 	if parser.asyncAPI.Components == nil {
@@ -2345,16 +2349,111 @@ func (parser *Parser) copyOpenAPISchemasToAsyncAPI() {
 	if parser.asyncAPI.Components.Schemas == nil {
 		parser.asyncAPI.Components.Schemas = make(map[string]*openapi.Schema)
 	}
-	for name, schema := range parser.openAPI.Components.Spec.Schemas {
-		if schema == nil || schema.Spec == nil {
-			continue
-		}
-		if _, exists := parser.asyncAPI.Components.Schemas[name]; exists {
-			continue
-		}
-		copied := *schema.Spec
-		parser.asyncAPI.Components.Schemas[name] = &copied
+
+	needed := make(map[string]struct{})
+	for _, schema := range parser.asyncAPI.Components.Schemas {
+		collectAsyncSchemaRefs(schema, needed)
 	}
+	for _, msg := range parser.asyncAPI.Components.Messages {
+		if msg == nil || msg.Payload == nil || msg.Payload.Schema == nil {
+			continue
+		}
+		collectAsyncSchemaRefs(msg.Payload.Schema, needed)
+	}
+
+	for len(needed) > 0 {
+		next := make(map[string]struct{})
+		for name := range needed {
+			if _, exists := parser.asyncAPI.Components.Schemas[name]; exists {
+				continue
+			}
+			schema := copyOpenAPISchema(parser, name)
+			if schema == nil {
+				continue
+			}
+			parser.asyncAPI.Components.Schemas[name] = schema
+			collectAsyncSchemaRefs(schema, next)
+		}
+		needed = next
+	}
+}
+
+const asyncSchemaRefPrefix = "#/components/schemas/"
+
+func collectAsyncSchemaRefs(schema *openapi.Schema, needed map[string]struct{}) {
+	if schema == nil {
+		return
+	}
+
+	collectAsyncRefOrSpec(schema.Not, needed)
+	collectAsyncRefOrSpec(schema.If, needed)
+	collectAsyncRefOrSpec(schema.Then, needed)
+	collectAsyncRefOrSpec(schema.Else, needed)
+	collectAsyncRefOrSpec(schema.PropertyNames, needed)
+	collectAsyncRefOrSpec(schema.Contains, needed)
+	collectAsyncRefOrSpec(schema.ContentSchema, needed)
+
+	for _, item := range schema.AllOf {
+		collectAsyncRefOrSpec(item, needed)
+	}
+	for _, item := range schema.AnyOf {
+		collectAsyncRefOrSpec(item, needed)
+	}
+	for _, item := range schema.OneOf {
+		collectAsyncRefOrSpec(item, needed)
+	}
+	for _, item := range schema.PrefixItems {
+		collectAsyncRefOrSpec(item, needed)
+	}
+	for _, item := range schema.Properties {
+		collectAsyncRefOrSpec(item, needed)
+	}
+	for _, item := range schema.PatternProperties {
+		collectAsyncRefOrSpec(item, needed)
+	}
+	for _, item := range schema.DependentSchemas {
+		collectAsyncRefOrSpec(item, needed)
+	}
+	for _, item := range schema.Defs {
+		collectAsyncRefOrSpec(item, needed)
+	}
+
+	collectAsyncBoolOrSchema(schema.Items, needed)
+	collectAsyncBoolOrSchema(schema.UnevaluatedItems, needed)
+	collectAsyncBoolOrSchema(schema.AdditionalProperties, needed)
+	collectAsyncBoolOrSchema(schema.UnevaluatedProperties, needed)
+}
+
+func collectAsyncRefOrSpec(ref *openapi.RefOrSpec[openapi.Schema], needed map[string]struct{}) {
+	if ref == nil {
+		return
+	}
+	if ref.Ref != nil && ref.Ref.Ref != "" {
+		if name, ok := asyncSchemaRefName(ref.Ref.Ref); ok {
+			needed[name] = struct{}{}
+		}
+		return
+	}
+	collectAsyncSchemaRefs(ref.Spec, needed)
+}
+
+func collectAsyncBoolOrSchema(value *openapi.BoolOrSchema, needed map[string]struct{}) {
+	if value == nil {
+		return
+	}
+	collectAsyncRefOrSpec(value.Schema, needed)
+}
+
+func asyncSchemaRefName(ref string) (string, bool) {
+	if !strings.HasPrefix(ref, asyncSchemaRefPrefix) {
+		return "", false
+	}
+	name := strings.TrimPrefix(ref, asyncSchemaRefPrefix)
+	if name == "" || strings.Contains(name, "/") {
+		return "", false
+	}
+
+	return name, true
 }
 
 func copyOpenAPISchema(parser *Parser, name string) *openapi.Schema {

@@ -72,13 +72,23 @@ func (ao *AsyncOperation) ParseComment(comment string, astFile *ast.File) error 
 		ao.ChannelName = lineRemainder
 	case "@asyncchannel.address":
 		ao.Channel.Address = lineRemainder
+	case "@asyncchannel.title":
+		ao.Channel.Title = lineRemainder
+	case "@asyncchannel.summary":
+		ao.Channel.Summary = lineRemainder
 	case "@asyncchannel.description":
 		ao.Channel.Description = lineRemainder
+	case "@asyncoperation.title":
+		ao.Operation.Title = lineRemainder
 	case asyncMessageAttr:
 		return ao.ParseMessageComment(lineRemainder, astFile)
 	case "@asyncmessage.name":
 		if len(ao.Messages) > 0 {
 			ao.Messages[len(ao.Messages)-1].Name = lineRemainder
+		}
+	case "@asyncmessage.title":
+		if len(ao.Messages) > 0 {
+			ao.Messages[len(ao.Messages)-1].Title = lineRemainder
 		}
 	case "@asyncmessage.contenttype":
 		if len(ao.Messages) > 0 {

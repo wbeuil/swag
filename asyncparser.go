@@ -8,6 +8,10 @@ import (
 
 // parseGeneralAsyncAPIInfo parses AsyncAPI general API info comments.
 func (parser *Parser) parseGeneralAsyncAPIInfo(comments []string) error {
+	if isAsyncOperationCommentBlock(comments) {
+		return nil
+	}
+
 	previousAttribute := ""
 	var currentServerName string
 
@@ -30,6 +34,8 @@ func (parser *Parser) parseGeneralAsyncAPIInfo(comments []string) error {
 			parser.asyncAPI.Info.Title = value
 		case asyncVersionAttr:
 			parser.asyncAPI.Info.Version = value
+		case asyncIdAttr:
+			parser.asyncAPI.Id = value
 		case asyncDescriptionAttr:
 			if previousAttribute == attribute {
 				parser.asyncAPI.Info.Description += "\n" + value
@@ -38,6 +44,12 @@ func (parser *Parser) parseGeneralAsyncAPIInfo(comments []string) error {
 			parser.asyncAPI.Info.Description = value
 		case asyncDefaultContentTypeAttr:
 			parser.asyncAPI.DefaultContentType = value
+		case asyncContactNameAttr:
+			parser.ensureAsyncContact().Name = value
+		case asyncContactURLAttr:
+			parser.ensureAsyncContact().URL = value
+		case asyncContactEmailAttr:
+			parser.ensureAsyncContact().Email = value
 		case asyncLicenseNameAttr:
 			if parser.asyncAPI.Info.License == nil {
 				parser.asyncAPI.Info.License = &asyncapi.License{}
@@ -48,6 +60,13 @@ func (parser *Parser) parseGeneralAsyncAPIInfo(comments []string) error {
 				parser.asyncAPI.Info.License = &asyncapi.License{}
 			}
 			parser.asyncAPI.Info.License.URL = value
+		case asyncTagAttr:
+			tagFields := FieldsByAnySpace(value, 2)
+			tag := &asyncapi.Tag{Name: tagFields[0]}
+			if len(tagFields) > 1 {
+				tag.Description = tagFields[1]
+			}
+			parser.asyncAPI.Info.Tags = append(parser.asyncAPI.Info.Tags, tag)
 		case "@asyncserver.name":
 			currentServerName = value
 			if parser.asyncAPI.Servers == nil {
@@ -75,15 +94,9 @@ func (parser *Parser) parseGeneralAsyncAPIInfo(comments []string) error {
 				parser.asyncAPI.Servers[currentServerName].PathName = value
 			}
 		case asyncExternalDocsDescAttr:
-			if parser.asyncAPI.ExternalDocs == nil {
-				parser.asyncAPI.ExternalDocs = &asyncapi.ExternalDocs{}
-			}
-			parser.asyncAPI.ExternalDocs.Description = value
+			parser.ensureAsyncInfoExternalDocs().Description = value
 		case asyncExternalDocsURLAttr:
-			if parser.asyncAPI.ExternalDocs == nil {
-				parser.asyncAPI.ExternalDocs = &asyncapi.ExternalDocs{}
-			}
-			parser.asyncAPI.ExternalDocs.URL = value
+			parser.ensureAsyncInfoExternalDocs().URL = value
 		default:
 			if currentServerName != "" {
 				if rest, ok := trimAttrPrefix(attribute, "@asyncserver.binding"); ok {
@@ -110,6 +123,38 @@ func (parser *Parser) parseGeneralAsyncAPIInfo(comments []string) error {
 	}
 
 	return nil
+}
+
+func (parser *Parser) ensureAsyncContact() *asyncapi.Contact {
+	if parser.asyncAPI.Info.Contact == nil {
+		parser.asyncAPI.Info.Contact = &asyncapi.Contact{}
+	}
+
+	return parser.asyncAPI.Info.Contact
+}
+
+func (parser *Parser) ensureAsyncInfoExternalDocs() *asyncapi.ExternalDocs {
+	if parser.asyncAPI.Info.ExternalDocs == nil {
+		parser.asyncAPI.Info.ExternalDocs = &asyncapi.ExternalDocs{}
+	}
+
+	return parser.asyncAPI.Info.ExternalDocs
+}
+
+func isAsyncOperationCommentBlock(comments []string) bool {
+	for _, comment := range comments {
+		comment = strings.TrimSpace(comment)
+		if comment == "" {
+			continue
+		}
+		attr := strings.ToLower(FieldsByAnySpace(comment, 2)[0])
+		switch attr {
+		case asyncOperationAttr, "@asyncoperation.name", asyncActionAttr, asyncChannelAttr, "@asyncchannel.name", asyncMessageAttr:
+			return true
+		}
+	}
+
+	return false
 }
 
 func (parser *Parser) serverBindingMap(name string) map[string]interface{} {
