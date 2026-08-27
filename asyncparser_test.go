@@ -112,7 +112,13 @@ func TestParser_ParseAsyncAPIComplete(t *testing.T) {
 	require.Contains(t, asyncAPI.Components.Schemas, "main.Recipient")
 	require.NotContains(t, asyncAPI.Components.Schemas, "Pet")
 	require.NotContains(t, asyncAPI.Components.Schemas, "main.Pet")
-	require.Contains(t, p.openAPI.Components.Spec.Schemas, "main.Pet")
+
+	openAPI := p.GetOpenAPI()
+	require.Contains(t, openAPI.Components.Spec.Schemas, "main.Pet")
+	require.NotContains(t, openAPI.Components.Spec.Schemas, "EmailJob")
+	require.NotContains(t, openAPI.Components.Spec.Schemas, "main.Recipient")
+	require.Contains(t, asyncAPI.Components.Schemas, "EmailJob")
+	require.Contains(t, asyncAPI.Components.Schemas, "main.Recipient")
 
 	assert.Equal(t, map[string]interface{}{"team": "platform"}, asyncAPI.Operations["receiveEmail"].Extensions["x-owner"])
 }
@@ -150,4 +156,30 @@ func TestCopyOpenAPISchemasToAsyncAPI_OnlyReferenced(t *testing.T) {
 	require.Contains(t, p.asyncAPI.Components.Schemas, "Recipient")
 	require.Contains(t, p.asyncAPI.Components.Schemas, "Address")
 	require.NotContains(t, p.asyncAPI.Components.Schemas, "Pet")
+}
+
+func TestPruneUnreferencedOpenAPISchemas(t *testing.T) {
+	t.Parallel()
+
+	p := New(GenerateOpenAPI3Doc(true))
+	op := openapi.NewExtendable(&openapi.Operation{})
+	op.AddExt("x-ref", "#/components/schemas/Pet")
+	p.openAPI.Paths = openapi.NewPaths()
+	p.openAPI.Paths.Spec.Add("/pet", openapi.NewRefOrExtSpec[openapi.PathItem](&openapi.PathItem{Get: op}))
+	p.openAPI.Components.Spec.Schemas = map[string]*openapi.RefOrSpec[openapi.Schema]{
+		"Pet": {Spec: &openapi.Schema{Title: "Pet"}},
+		"EmailJob": {Spec: &openapi.Schema{
+			Title: "EmailJob",
+			Properties: map[string]*openapi.RefOrSpec[openapi.Schema]{
+				"recipient": {Ref: &openapi.Ref{Ref: "#/components/schemas/Recipient"}},
+			},
+		}},
+		"Recipient": {Spec: &openapi.Schema{Title: "Recipient"}},
+	}
+
+	p.GetOpenAPI()
+
+	require.Contains(t, p.openAPI.Components.Spec.Schemas, "Pet")
+	require.NotContains(t, p.openAPI.Components.Spec.Schemas, "EmailJob")
+	require.NotContains(t, p.openAPI.Components.Spec.Schemas, "Recipient")
 }

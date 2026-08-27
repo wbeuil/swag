@@ -29,6 +29,9 @@ type FieldParserV3 interface {
 
 // GetOpenAPI returns *openapi.OpenAPI which is the root document object for the API specification.
 func (p *Parser) GetOpenAPI() *openapi.OpenAPI {
+	p.copyOpenAPISchemasToAsyncAPI()
+	p.pruneUnreferencedOpenAPISchemas()
+
 	return p.openAPI
 }
 

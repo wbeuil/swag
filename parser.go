@@ -15,6 +15,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"reflect"
+	"regexp"
 	"sort"
 	"strconv"
 	"strings"
@@ -2455,6 +2456,67 @@ func asyncSchemaRefName(ref string) (string, bool) {
 
 	return name, true
 }
+
+func (parser *Parser) pruneUnreferencedOpenAPISchemas() {
+	if parser.openAPI == nil || parser.openAPI.Components == nil || parser.openAPI.Components.Spec == nil {
+		return
+	}
+
+	schemas := parser.openAPI.Components.Spec.Schemas
+	if len(schemas) == 0 {
+		return
+	}
+
+	parser.openAPI.Components.Spec.Schemas = nil
+	data, err := json.Marshal(parser.openAPI)
+	parser.openAPI.Components.Spec.Schemas = schemas
+	if err != nil {
+		return
+	}
+
+	needed := make(map[string]struct{})
+	for _, match := range openAPISchemaRefPattern.FindAllSubmatch(data, -1) {
+		needed[string(match[1])] = struct{}{}
+	}
+
+	for {
+		added := false
+		for name := range needed {
+			schema, ok := schemas[name]
+			if !ok || schema == nil {
+				continue
+			}
+
+			extra := make(map[string]struct{})
+			if schema.Ref != nil && schema.Ref.Ref != "" {
+				if refName, ok := asyncSchemaRefName(schema.Ref.Ref); ok {
+					extra[refName] = struct{}{}
+				}
+			} else {
+				collectAsyncSchemaRefs(schema.Spec, extra)
+			}
+
+			for extraName := range extra {
+				if _, exists := needed[extraName]; exists {
+					continue
+				}
+				needed[extraName] = struct{}{}
+				added = true
+			}
+		}
+		if !added {
+			break
+		}
+	}
+
+	for name := range schemas {
+		if _, ok := needed[name]; !ok {
+			delete(schemas, name)
+		}
+	}
+}
+
+var openAPISchemaRefPattern = regexp.MustCompile(`#/components/schemas/([^"/]+)`)
 
 func copyOpenAPISchema(parser *Parser, name string) *openapi.Schema {
 	if parser.openAPI == nil || parser.openAPI.Components == nil || parser.openAPI.Components.Spec == nil {

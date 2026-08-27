@@ -988,6 +988,11 @@ func TestGen_BuildOpenAPI32AndAsyncAPI(t *testing.T) {
 	emailJob := messages["EmailJob"].(map[string]interface{})
 	assert.Equal(t, "#/components/schemas/EmailJob", emailJob["payload"].(map[string]interface{})["$ref"])
 
+	openSchemas := openAPI["components"].(map[string]interface{})["schemas"].(map[string]interface{})
+	assert.Contains(t, openSchemas, "main.Pet")
+	assert.NotContains(t, openSchemas, "EmailJob")
+	assert.NotContains(t, openSchemas, "main.Recipient")
+
 	asyncYAML, err := os.ReadFile(filepath.Join(outputDir, "asyncapi.yaml"))
 	require.NoError(t, err)
 	asyncFromYAML, err := sigyaml.YAMLToJSON(asyncYAML)
