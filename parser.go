@@ -2474,11 +2474,7 @@ func (parser *Parser) pruneUnreferencedOpenAPISchemas() {
 		return
 	}
 
-	needed := make(map[string]struct{})
-	for _, match := range openAPISchemaRefPattern.FindAllSubmatch(data, -1) {
-		needed[string(match[1])] = struct{}{}
-	}
-
+	needed := collectOpenAPISchemaRefNames(data)
 	for {
 		added := false
 		for name := range needed {
@@ -2487,16 +2483,12 @@ func (parser *Parser) pruneUnreferencedOpenAPISchemas() {
 				continue
 			}
 
-			extra := make(map[string]struct{})
-			if schema.Ref != nil && schema.Ref.Ref != "" {
-				if refName, ok := asyncSchemaRefName(schema.Ref.Ref); ok {
-					extra[refName] = struct{}{}
-				}
-			} else {
-				collectAsyncSchemaRefs(schema.Spec, extra)
+			schemaJSON, err := json.Marshal(schema)
+			if err != nil {
+				continue
 			}
 
-			for extraName := range extra {
+			for extraName := range collectOpenAPISchemaRefNames(schemaJSON) {
 				if _, exists := needed[extraName]; exists {
 					continue
 				}
@@ -2514,6 +2506,15 @@ func (parser *Parser) pruneUnreferencedOpenAPISchemas() {
 			delete(schemas, name)
 		}
 	}
+}
+
+func collectOpenAPISchemaRefNames(data []byte) map[string]struct{} {
+	needed := make(map[string]struct{})
+	for _, match := range openAPISchemaRefPattern.FindAllSubmatch(data, -1) {
+		needed[string(match[1])] = struct{}{}
+	}
+
+	return needed
 }
 
 var openAPISchemaRefPattern = regexp.MustCompile(`#/components/schemas/([^"/]+)`)

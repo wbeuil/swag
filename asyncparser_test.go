@@ -164,10 +164,21 @@ func TestPruneUnreferencedOpenAPISchemas(t *testing.T) {
 	p := New(GenerateOpenAPI3Doc(true))
 	op := openapi.NewExtendable(&openapi.Operation{})
 	op.AddExt("x-ref", "#/components/schemas/Pet")
+	op.AddExt("x-create", "#/components/schemas/Create")
 	p.openAPI.Paths = openapi.NewPaths()
 	p.openAPI.Paths.Spec.Add("/pet", openapi.NewRefOrExtSpec[openapi.PathItem](&openapi.PathItem{Get: op}))
 	p.openAPI.Components.Spec.Schemas = map[string]*openapi.RefOrSpec[openapi.Schema]{
 		"Pet": {Spec: &openapi.Schema{Title: "Pet"}},
+		"Create": {Spec: &openapi.Schema{
+			Title: "Create",
+			Properties: map[string]*openapi.RefOrSpec[openapi.Schema]{
+				"venue": {Spec: &openapi.Schema{
+					Description: "Venue",
+					Extensions:  map[string]any{"$ref": "#/components/schemas/Venue"},
+				}},
+			},
+		}},
+		"Venue": {Spec: &openapi.Schema{Title: "Venue"}},
 		"EmailJob": {Spec: &openapi.Schema{
 			Title: "EmailJob",
 			Properties: map[string]*openapi.RefOrSpec[openapi.Schema]{
@@ -180,6 +191,8 @@ func TestPruneUnreferencedOpenAPISchemas(t *testing.T) {
 	p.GetOpenAPI()
 
 	require.Contains(t, p.openAPI.Components.Spec.Schemas, "Pet")
+	require.Contains(t, p.openAPI.Components.Spec.Schemas, "Create")
+	require.Contains(t, p.openAPI.Components.Spec.Schemas, "Venue")
 	require.NotContains(t, p.openAPI.Components.Spec.Schemas, "EmailJob")
 	require.NotContains(t, p.openAPI.Components.Spec.Schemas, "Recipient")
 }
